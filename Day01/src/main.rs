@@ -2,7 +2,7 @@ use std::fs;
 
 #[allow(non_snake_case)]
 fn main() {
-    let contents: String = fs::read_to_string("src/input.txt").expect("Should have been abl;e to read the file");
+    let contents: String = fs::read_to_string("src/input.txt").expect("Should have been able to read the file");
 
     println!("part 1: {}", part1(contents.clone()));
     println!("part 2: {}", part2(contents.clone()));
