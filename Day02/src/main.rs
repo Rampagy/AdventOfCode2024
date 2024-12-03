@@ -8,7 +8,7 @@ fn main() {
     println!("part 2: {}", part2(contents.clone()));
 }
 
-
+#[allow(non_snake_case)]
 fn part1(contents: String) -> u64 {
     let mut answer: u64 = 0;
 
@@ -36,7 +36,7 @@ fn part1(contents: String) -> u64 {
     return answer;
 }
 
-
+#[allow(non_snake_case)]
 fn check_good(report: Vec<u64>) -> bool {
     let mut level_delta: i64 = 0;
         for i in 1..report.len() {
@@ -55,6 +55,7 @@ fn check_good(report: Vec<u64>) -> bool {
         }
 }
 
+#[allow(non_snake_case)]
 fn part2(contents: String) -> u64 {
     let mut answer: u64 = 0;
 

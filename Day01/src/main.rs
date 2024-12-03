@@ -9,7 +9,7 @@ fn main() {
     println!("part 2: {}", part2(contents.clone()));
 }
 
-
+#[allow(non_snake_case)]
 fn part1(contents: String) -> u64 {
     let mut answer: u64 = 0;
     let mut left_side: Vec<u64> = vec![];
@@ -36,7 +36,7 @@ fn part1(contents: String) -> u64 {
     return answer;
 }
 
-
+#[allow(non_snake_case)]
 fn part2(contents: String) -> u64 {
     let mut answer: u64 = 0;
     let mut left_side: Vec<u64> = vec![];
