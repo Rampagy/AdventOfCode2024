@@ -1,9 +1,10 @@
-use std::fs;
-use std::collections::HashSet;
-
 mod position;
 
+use std::fs;
+use std::collections::HashSet;
+use std::collections::HashMap;
 use position::Position;
+
 
 #[allow(non_snake_case)]
 fn main() {
@@ -13,8 +14,9 @@ fn main() {
     println!("part 2: {}", part2(contents.clone()));
 }
 
+#[allow(non_snake_case)]
 fn turn_right(p: Position) -> Position {
-    let new_offset = 
+    let new_offset: Position = 
     if p.x == 0 && p.y == -1 { // north
         // east
         Position::new(1, 0)
@@ -34,7 +36,6 @@ fn turn_right(p: Position) -> Position {
 
     return new_offset;
 }
-
 
 
 #[allow(non_snake_case)]
@@ -65,8 +66,9 @@ fn part1(contents: String) -> u64 {
     }
 
     let mut direction_offset: Position = Position::new(0, -1);
+    visited_squares.insert(lab_guard_position);
     while lab_guard_position.x >= 0 && lab_guard_position.y >= 0 && 
-          lab_guard_position.x < map_width as i32 && lab_guard_position.y < map_height as i32 {
+          lab_guard_position.x <= map_width as i32 && lab_guard_position.y <= map_height as i32 {
             
             let new_lab_guard_position: Position = Position {
                 x: lab_guard_position.x + direction_offset.x , 
@@ -93,14 +95,55 @@ fn part1(contents: String) -> u64 {
 
 
 #[allow(non_snake_case)]
+fn check_exit(mut obstacles: HashSet<Position>, mut lab_guard_position: Position, mut direction_offset: Position, map_width: i32, map_height: i32) -> bool {
+    // save the initial guard position and heading
+    let initial_position: Position  = lab_guard_position;
+    let initial_direction_offset: Position = direction_offset;
+
+    // add the obstacle that is causing us to turn
+    let new_obstable: Position = Position::new(lab_guard_position.x + direction_offset.x, lab_guard_position.y + direction_offset.y);
+    obstacles.insert(new_obstable);
+
+    let mut loop_count: usize = 0;
+    while loop_count < 20000 {
+        let new_lab_guard_position: Position = Position {
+            x: lab_guard_position.x + direction_offset.x , 
+            y: lab_guard_position.y + direction_offset.y
+        };
+
+        // check if the lab_guard_position's next position is #
+        if obstacles.contains(&new_lab_guard_position) {
+            // we hit an obstacle, turn right
+            direction_offset = turn_right(direction_offset);
+        } else {
+            // move forward
+            lab_guard_position = new_lab_guard_position;
+        }
+
+        // check if it exits map or ends up back at it's orginal position and heading
+        if lab_guard_position.x < 0 || lab_guard_position.y < 0 ||
+                lab_guard_position.x > map_width || lab_guard_position.y > map_height {
+            return true;
+        } else if lab_guard_position == initial_position && initial_direction_offset == direction_offset {
+            return false;
+        }
+
+        loop_count += 1;
+    }
+
+    return false;
+}
+
+#[allow(non_snake_case)]
 fn part2(contents: String) -> u64 {
     let mut answer: u64 = 0;
     let mut lab_map: HashSet<Position> = HashSet::new();
-    let mut visited_squares: HashSet<Position> = HashSet::new();
+    //let mut visited_squares: HashMap<Position, Vec<Position>> = HashMap::new();
     let mut lab_guard_position: Position = Position::new(0, 0);
     let mut map_width: usize = 0;
     let mut map_height: usize = 0;
 
+    // read inputs
     for (row_num, line) in contents.lines().enumerate() {
         for (col_num, c) in line.chars().enumerate() {
             if c == '#' {
@@ -119,10 +162,12 @@ fn part2(contents: String) -> u64 {
         }
     }
 
+    // walk through the lab
     let mut direction_offset: Position = Position::new(0, -1);
+    //visited_squares.insert(lab_guard_position);
     while lab_guard_position.x >= 0 && lab_guard_position.y >= 0 && 
-          lab_guard_position.x < map_width as i32 && lab_guard_position.y < map_height as i32 {
-            
+          lab_guard_position.x <= map_width as i32 && lab_guard_position.y <= map_height as i32 {
+
             let new_lab_guard_position: Position = Position {
                 x: lab_guard_position.x + direction_offset.x , 
                 y: lab_guard_position.y + direction_offset.y
@@ -133,18 +178,18 @@ fn part2(contents: String) -> u64 {
                 // we hit an obstacle, turn right
                 direction_offset = turn_right(direction_offset);
             } else {
-                // move forward
-                lab_guard_position = new_lab_guard_position;
-
-                if !visited_squares.contains(&lab_guard_position) {
-                    visited_squares.insert(lab_guard_position);
-                } else {
+                // check if turning right would exit or loop
+                if !check_exit(lab_map.clone(), lab_guard_position, direction_offset, map_width as i32, map_height as i32) {
+                    // didn't exit therefore it looped
                     answer += 1;
                 }
+
+                // move forward
+                lab_guard_position = new_lab_guard_position;
             }
     }
 
-    return answer;
+    return answer; // 1797 - too high
 }
 
 
