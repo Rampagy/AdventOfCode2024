@@ -1,13 +1,23 @@
 use std::fs;
 use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::time::Instant;
 
 #[allow(non_snake_case)]
 fn main() {
     let contents: String = fs::read_to_string("src/input.txt").expect("Should have been able to read the file");
 
-    println!("part 1: {}", part1(contents.clone()));
-    println!("part 2: {}", part2(contents.clone()));
+    let mut now: Instant = Instant::now();
+    let part1: u64 = part1(contents.clone());
+    let mut elapsed: std::time::Duration = now.elapsed();
+
+    println!("part 1: {} ({:.2?})", part1, elapsed);
+
+    now = Instant::now();
+    let part2: u64 = part2(contents.clone());
+    elapsed = now.elapsed();
+
+    println!("part 2: {} ({:.2?})", part2, elapsed);
 }
 
 
