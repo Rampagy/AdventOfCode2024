@@ -112,9 +112,109 @@ fn part1(contents: String) -> u64 {
 fn part2(contents: String) -> u64 {
     let mut answer: u64 = 0;
 
-
     for (_line_num, line) in contents.lines().enumerate() {
 
+        // filesystem[value] = (starting_index, repeats)
+        let mut filesystem: Vec<(u64, u8)> = Vec::new();
+        let mut start_index: u64 = 0;
+
+        for (value, repeats) in line.chars().enumerate() {
+            let reps: u8 = repeats.to_digit(10).unwrap() as u8;
+
+            if (value & 0x01) == 0x00 {
+                // only save even value indices (odds are assumed to be empty space)
+                filesystem.push((start_index, reps));
+            }
+
+            // get the next starting index
+            start_index = start_index + reps as u64;
+        }
+
+        let mut head_index: u64 = 0;
+        let mut compact_filesystem: Vec<u64> = Vec::new();
+        let mut remaining_size: u64 = 0;
+        let mut tail_index: u64 = (filesystem.len()-1) as u64;
+        while head_index < tail_index {
+            let (start_index, repetitions) = filesystem[head_index as usize];
+            let empty_space_start: u64 = start_index + repetitions  as u64;
+            let empty_space_end: u64 = filesystem[(head_index + 1) as usize].0;
+            remaining_size = empty_space_end - empty_space_start;
+
+            // add the unmoved bytes
+            for _ in start_index..start_index+repetitions as u64 {
+                compact_filesystem.push(head_index);
+            }
+            
+            // loop through all of the files and see if any can fit in there
+            while tail_index > head_index && remaining_size > 0 {
+
+                // add the moved bytes into the compact file system
+                let mut i: u64 = 0;
+                if filesystem[tail_index as usize].1 as u64 <= remaining_size {
+                    let file_size: u64 = filesystem[tail_index as usize].1 as u64;
+                    remaining_size = remaining_size.saturating_sub(filesystem[tail_index as usize].1 as u64);
+
+                    while i < file_size {
+                        if filesystem[tail_index as usize].1 == 0 {
+                            // no more repetitions
+                            // remove the last index from filesystem and decrement tail_index
+                            // and add the next value
+                            _ = filesystem.remove(tail_index as usize);
+                            tail_index -= 1;
+                        }
+
+                        compact_filesystem.push(tail_index);
+
+                        if filesystem[tail_index as usize].1 > 0 {
+                            // decrement the repetitions of the value
+                            filesystem[tail_index as usize].1 -= 1;
+                            i += 1;
+                        }
+
+                        if filesystem[tail_index as usize].1 == 0 {
+                            // no more repetitions
+                            // remove the last index from filesystem and decrement tail_index
+                            // and add the next value
+
+                            // TODO: adjust every starting index after this
+                            let (start_idx, length) = filesystem.remove(tail_index as usize);
+                            tail_index -= 1;
+
+                            // loop through all the indices after this one and decrement the starting index by length
+                            let mut j: usize = start_idx as usize;
+                            while j < filesystem.len() {
+                                filesystem[j].0 = filesystem[j].0.saturating_sub(length as u64);
+                                j += 1;
+                            }
+                        }
+
+                        if head_index >= tail_index {
+                            break;
+                        }
+                    }
+
+                } else {
+                    tail_index -= 1;
+                }
+            }
+
+            head_index = head_index.saturating_add(1);
+            tail_index = (filesystem.len()-1) as u64;
+        }
+
+        // append any remaining repetitions from head_index to compact_filesystem
+        if head_index as usize <= filesystem.len() - 1 && 
+                filesystem[head_index as usize].1 > 0 {
+            for _ in 0..filesystem[head_index as usize].1 {
+                compact_filesystem.push(head_index);
+            }
+        }
+
+        for (i, val) in compact_filesystem.into_iter().enumerate() {
+            answer += (i as u64)*val;
+        }
+
+        break;
     }
 
     return answer;
@@ -151,6 +251,6 @@ mod tests {
     #[test]
     fn test_part2() {
         let contents: String = fs::read_to_string("src/test2.txt").expect("Should have been able to read the file");
-        assert_eq!(part2(contents.clone()), 34);
+        assert_eq!(part2(contents.clone()), 2858);
     }
 }
