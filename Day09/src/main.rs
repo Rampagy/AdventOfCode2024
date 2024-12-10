@@ -10,7 +10,7 @@ fn main() {
     let part1: u64 = part1(contents.clone());
     let mut elapsed: std::time::Duration = now.elapsed();
 
-    println!("part 1: {} ({:.2?})", part1, elapsed); // 6201390809186 - too high
+    println!("part 1: {} ({:.2?})", part1, elapsed);
 
     now = Instant::now();
     let part2: u64 = part2(contents.clone());
