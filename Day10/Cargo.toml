@@ -1,9 +1,8 @@
 [package]
-name = "Day09"
+name = "Day10"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-
-[profile.dev]
-#opt-level = 3
+ordered-float = "4.5.0"
+priority-queue = "2.1.1"
