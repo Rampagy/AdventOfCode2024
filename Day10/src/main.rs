@@ -183,8 +183,8 @@ pub fn optimized_dijkstras_search_part2(weighted_map: &Vec<Vec<u8>>,
 
     let mapWidth: usize = weighted_map[0].len();
     let mapHeight: usize = weighted_map.len();
-
     let mut paths: Vec<Vec<Position>> = Vec::new();
+
     if start.x < 0 || start.y < 0 || goal.x >= mapWidth as i32 || goal.y >= mapHeight as i32 ||
        start == goal || mapWidth < 2 || mapHeight < 2 {
         return paths;
@@ -246,9 +246,7 @@ pub fn optimized_dijkstras_search_part2(weighted_map: &Vec<Vec<u8>>,
             path.push(current.clone());
             match came_from.get_mut(&current.clone()) {
                 Some(x) => {
-                    if x.len() > 1 {
-                        current = x.pop().unwrap();
-                    } else if x.len() > 0 {
+                    if x.len() > 0 {
                         current = *x.first().unwrap();
                     } else {
                         break;
@@ -259,11 +257,30 @@ pub fn optimized_dijkstras_search_part2(weighted_map: &Vec<Vec<u8>>,
             }
         }
 
-        // TODO: the one before a duplicated number needs to be popped came_from
+        // TODO: the one before a duplicated number needs to be popped out of came_from
         //path.dedup();
         if path.len() == 9 {
             path.reverse();
-            paths.push(path);
+            paths.push(path.clone());
+
+            // TODO: update came_from to remove the came from on any squares that have duplicates
+            let mut i: u64 = path.len() as u64 - 1;
+            while i > 0 {
+                if came_from.get(&path.get(i as usize).unwrap()).unwrap().len() > 1 {
+                    let p: &Position = path.get(i as usize - 1).unwrap();
+
+                    match came_from.get_mut(&path.get(i as usize).unwrap()) {
+                        Some(x) => {
+                            x.retain(|a| a != p)
+                        } None => {
+                            // do nothing
+                        }
+                    }
+                    //let parent: &Vec<Position> = came_from.get(&path.get(i as usize).unwrap()).unwrap()
+                    //came_from.remove(parent);
+                }
+                i -= 1;
+            }
         } else {
             // no more paths to find
             break;
