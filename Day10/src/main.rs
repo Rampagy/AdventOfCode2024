@@ -175,121 +175,30 @@ fn part1(contents: String) -> u64 {
     return answer;
 }
 
-
 #[allow(non_snake_case)]
-pub fn optimized_dijkstras_search_part2(weighted_map: &Vec<Vec<u8>>, 
-                                        start: Position, 
-                                        goal: Position) -> Vec<Vec<Position>> {
-
+fn depth_first_search(weighted_map: &Vec<Vec<u8>>, start: Position, count: &mut u64) -> () {
     let mapWidth: usize = weighted_map[0].len();
     let mapHeight: usize = weighted_map.len();
-    let mut paths: Vec<Vec<Position>> = Vec::new();
 
-    if start.x < 0 || start.y < 0 || goal.x >= mapWidth as i32 || goal.y >= mapHeight as i32 ||
-       start == goal || mapWidth < 2 || mapHeight < 2 {
-        return paths;
+    if start.x < 0 || start.y < 0 || mapWidth < 2 || mapHeight < 2 {
+        return;
     }
 
-    /* Memory allocation */
-    let mut close_set: HashSet<Position, PositionBuildHasher> = HashSet::with_capacity_and_hasher(mapHeight * mapWidth, PositionBuildHasher);
-    let mut came_from: HashMap<Position, Vec<Position>, PositionBuildHasher> = HashMap::with_capacity_and_hasher(mapHeight * mapWidth, PositionBuildHasher);
-    let mut oheap: PriorityQueue<Position, OrderedFloat<f32>, PositionBuildHasher> = PriorityQueue::with_capacity_and_hasher(mapWidth + mapHeight, PositionBuildHasher);
-
-    let mut current: Position;
-    let mut neighbors: [Position; 4];
-
-    /* Note: gscore is multiplied by -1 before being entered into the oheap
-     *  because of how big of a pain in the ass it is to switch it from a
-     *  max heap to a min heap */
-    oheap.push(start, OrderedFloat::from(0.0f32));
-
-    let mut _count: u32 = 0;
-    while !oheap.is_empty() {
-        _count += 1;
-        (current, _) = oheap.pop().unwrap_or((Position::new(0,0), OrderedFloat::from(0.0)));
-        close_set.insert(current);
-
-        neighbors = current.get_surrounding_positions();
-
-        /* Search surrounding neighbors */
-        for neighbor in neighbors {
-            /* if the neighbor is a valid position */
-            if neighbor.x >= 0 && neighbor.y >= 0 && 
-                    neighbor.y < mapHeight as i32 && neighbor.x < mapWidth as i32 &&
-                    weighted_map[neighbor.y as usize][neighbor.x as usize] == weighted_map[current.y as usize][current.x as usize].saturating_add(1) {
-
-                /* track the node's parent */
-                match came_from.get_mut(&neighbor) {
-                    Some(x) => {
-                        x.push(current);
-                    } None => {
-                        came_from.insert(neighbor, vec![current]);
-                    }
-                }
-
-                /* remove the neighbor */
-                //oheap.remove(&neighbor);
-
-                /* Add the new item and sort */
-                oheap.push(neighbor, OrderedFloat::from(-0.0f32));
+    for neighbor in start.get_surrounding_positions() {
+        // if the neighbor is a valid position
+        if neighbor.x >= 0 && neighbor.y >= 0 && 
+                neighbor.y < mapHeight as i32 && neighbor.x < mapWidth as i32 &&
+                weighted_map[neighbor.y as usize][neighbor.x as usize] == weighted_map[start.y as usize][start.x as usize].saturating_add(1) {
+            
+            if weighted_map[neighbor.y as usize][neighbor.x as usize] == 9 {
+                *count += 1;
+            } else {
+                depth_first_search(weighted_map, neighbor, count);
             }
         }
     }
 
-
-    loop {
-        /* trace path back from the goal */
-        current = goal;
-        let mut path: Vec<Position> = Vec::new();
-
-        while current != start {
-            path.push(current.clone());
-            match came_from.get_mut(&current.clone()) {
-                Some(x) => {
-                    if x.len() > 0 {
-                        current = *x.first().unwrap();
-                    } else {
-                        break;
-                    }
-                } None => {
-                    break;
-                }
-            }
-        }
-
-
-        if path.len() == 9 {
-            path.reverse();
-
-            if path == *paths.last().unwrap_or(&vec![Position::new(0,0)]) {
-                break;
-            }
-            paths.push(path.clone());
-
-            // TODO: update came_from to remove the came from on any squares that have duplicates
-            let mut i: u64 = path.len() as u64 - 1;
-            while i > 0 {
-                if came_from.get(&path.get(i as usize).unwrap()).unwrap().len() > 1 {
-                    let p: &Position = path.get(i as usize - 1).unwrap();
-
-                    match came_from.get_mut(&path.get(i as usize).unwrap()) {
-                        Some(x) => {
-                            x.retain(|a| a != p)
-                        } None => {
-                            // do nothing
-                        }
-                    }
-                }
-                i -= 1;
-            }
-
-        } else {
-            // no more paths to find
-            break;
-        }
-    }
-
-    return paths;
+    return;
 }
 
 #[allow(non_snake_case)]
@@ -297,15 +206,12 @@ fn part2(contents: String) -> u64 {
     let mut answer: u64 = 0;
     let mut maze: Vec<Vec<u8>> = Vec::new();
     let mut start_positions: Vec<Position> = Vec::new();
-    let mut end_positions: Vec<Position> = Vec::new();
 
     for (row_num, line) in contents.lines().enumerate() {
         let mut row: Vec<u8> = Vec::new();
         for (col_num, c) in line.chars().enumerate() {
             if c == '0' {
                 start_positions.push(Position::new(col_num as i32, row_num as i32));
-            } else if c == '9' {
-                end_positions.push(Position::new(col_num as i32, row_num as i32));
             }
 
             row.push(c.to_digit(10).unwrap() as u8);
@@ -314,11 +220,7 @@ fn part2(contents: String) -> u64 {
     }
 
     for start in start_positions {
-        for end in end_positions.clone() {
-            let paths: Vec<Vec<Position>> = optimized_dijkstras_search_part2(&maze, start, end);
-
-            answer += paths.len() as u64;
-        }
+        depth_first_search(&maze, start, &mut answer);
     }
 
     return answer;
