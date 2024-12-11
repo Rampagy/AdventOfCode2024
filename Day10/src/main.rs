@@ -221,7 +221,7 @@ pub fn optimized_dijkstras_search_part2(weighted_map: &Vec<Vec<u8>>,
                 /* track the node's parent */
                 match came_from.get_mut(&neighbor) {
                     Some(x) => {
-                        x.push(neighbor);
+                        x.push(current);
                     } None => {
                         came_from.insert(neighbor, vec![current]);
                     }
@@ -257,10 +257,13 @@ pub fn optimized_dijkstras_search_part2(weighted_map: &Vec<Vec<u8>>,
             }
         }
 
-        // TODO: the one before a duplicated number needs to be popped out of came_from
-        //path.dedup();
+
         if path.len() == 9 {
             path.reverse();
+
+            if path == *paths.last().unwrap_or(&vec![Position::new(0,0)]) {
+                break;
+            }
             paths.push(path.clone());
 
             // TODO: update came_from to remove the came from on any squares that have duplicates
@@ -276,11 +279,10 @@ pub fn optimized_dijkstras_search_part2(weighted_map: &Vec<Vec<u8>>,
                             // do nothing
                         }
                     }
-                    //let parent: &Vec<Position> = came_from.get(&path.get(i as usize).unwrap()).unwrap()
-                    //came_from.remove(parent);
                 }
                 i -= 1;
             }
+
         } else {
             // no more paths to find
             break;
