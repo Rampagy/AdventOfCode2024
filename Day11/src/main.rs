@@ -22,7 +22,6 @@ fn main() {
     println!("part 2: {} ({:.2?})", part2, elapsed);
 }
 
-
 #[allow(non_snake_case)]
 fn part1(contents: String, blinks: u64) -> u64 {
     let mut arrangement: Vec<u64> = Vec::new();
@@ -55,6 +54,36 @@ fn part1(contents: String, blinks: u64) -> u64 {
     return arrangement.len() as u64;
 }
 
+
+fn get_num_digits(mut num: u64) -> u64 {
+    let mut num_digits: u64 = 1;
+    while (num / 10) > 0 {
+        num_digits += 1;
+        num /= 10;
+    }
+    return num_digits;
+}
+
+fn split_digits(mut num: u64, num_digits: u64) -> (u64, u64) {
+    let mut left: u64 = 0;
+    let mut right: u64 = 0;
+    let half_point: u64  = num_digits >> 1;
+
+    let mut right_count: u64 = 0;
+    let mut left_count: u64 = 0;
+    for i in 0..num_digits {
+        if i < half_point {
+            right += (num % 10) * (10 as u64).pow(right_count as u32);
+            right_count += 1;
+        } else {
+            left += (num % 10) * (10 as u64).pow(left_count as u32);
+            left_count += 1;
+        }
+        num /= 10;
+    }
+
+    return (left, right);
+}
 
 #[allow(non_snake_case)]
 fn part2(contents: String, blinks: u64) -> u64 {
@@ -90,12 +119,10 @@ fn part2(contents: String, blinks: u64) -> u64 {
                         new_arrangement.insert(new_digit, *count);
                     }
                 }
-            } else if digit.to_string().len() & 0x01 == 0x00 {
+            } else if get_num_digits(*digit) & 0x01 == 0x00 {
                 // even number of digits
-                let num_as_str: String = digit.to_string();
-                let num_digits: usize = num_as_str.len() >> 1;
-                let left: u64 = num_as_str[..num_digits].parse::<u64>().unwrap();
-                let right: u64 = num_as_str[num_digits..].parse::<u64>().unwrap();
+                let num_digits: u64 = get_num_digits(*digit);
+                let (left, right): (u64, u64) = split_digits(*digit, num_digits);
 
                 for d in [left, right] {
                     match new_arrangement.get_mut(&d) {
