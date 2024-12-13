@@ -1,5 +1,6 @@
 use std::fmt;
 use std::hash::{BuildHasher, Hash, Hasher};
+use std::ops;
 
 
 #[derive(Copy, Clone, Debug)]
@@ -90,5 +91,14 @@ impl Hasher for PositionHasher {
 
     fn write_u64(&mut self, i: u64) {
         self.0 = i;
+    }
+}
+
+// overload the add operator
+impl ops::Add<Position> for Position {
+    type Output = Position;
+
+    fn add(self, _rhs: Position) -> Position {
+        Position::new(self.x.wrapping_add(_rhs.x), self.y.wrapping_add(_rhs.y))
     }
 }

@@ -26,13 +26,12 @@ fn main() {
 
 struct GardenPlot {
     perimeter: u64,
-    area: u64,
     locations: HashSet<Position, PositionBuildHasher>,
 }
 
 impl GardenPlot {
-    fn new(p: u64, a: u64, l: HashSet<Position, PositionBuildHasher>) -> Self {
-        Self {perimeter: p, area: a, locations: l}
+    fn new(p: u64, l: HashSet<Position, PositionBuildHasher>) -> Self {
+        Self {perimeter: p, locations: l}
     }
 }
 
@@ -49,12 +48,12 @@ fn BreadthFirstSearch(map: &Vec<Vec<char>>, start: Position, garden: &mut HashMa
         Some(x) => {
             // push a new garden plot
             let new_locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
-            let new_plot: GardenPlot = GardenPlot::new(0, 0, new_locations);
+            let new_plot: GardenPlot = GardenPlot::new(0, new_locations);
             x.push(new_plot);
         } None => {
             // insert the first garden plot
             let new_locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
-            let new_plot: GardenPlot = GardenPlot::new(0, 0, new_locations);
+            let new_plot: GardenPlot = GardenPlot::new(0, new_locations);
             garden.insert(plant, vec![new_plot]);
         }
     }
@@ -67,13 +66,12 @@ fn BreadthFirstSearch(map: &Vec<Vec<char>>, start: Position, garden: &mut HashMa
         match garden.get_mut(&plant) {
             Some(x) => {
                 // increment area and add to the locations
-                x.last_mut().unwrap().area += 1;
                 x.last_mut().unwrap().locations.insert(current);
             } None => {
                 // should never be reached, but insert just in case
                 let mut locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
                 locations.insert(current);
-                garden.insert(plant, vec![GardenPlot::new(0, 1, locations)]);
+                garden.insert(plant, vec![GardenPlot::new(0, locations)]);
             }
         }
 
@@ -96,7 +94,7 @@ fn BreadthFirstSearch(map: &Vec<Vec<char>>, start: Position, garden: &mut HashMa
                             // should never be reached, but insert just in case
                             let mut locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
                             locations.insert(neighbor);
-                            garden.insert(plant, vec![GardenPlot::new(1, 1, locations)]);
+                            garden.insert(plant, vec![GardenPlot::new(1, locations)]);
                         }
                     }
                 }
@@ -104,6 +102,7 @@ fn BreadthFirstSearch(map: &Vec<Vec<char>>, start: Position, garden: &mut HashMa
         }
     }
 }
+
 
 #[allow(non_snake_case)]
 fn part1(contents: String) -> u64 {
@@ -118,7 +117,7 @@ fn part1(contents: String) -> u64 {
 
             if !garden.contains_key(&c) {
                 let l: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
-                garden.insert(c, vec![GardenPlot::new(0, 0, l)]);
+                garden.insert(c, vec![GardenPlot::new(0, l)]);
             }
         }
 
@@ -155,7 +154,7 @@ fn part1(contents: String) -> u64 {
     let mut answer: u64 = 0;
     for (_, plots) in garden.iter() {
         for plot in plots {
-            answer += plot.area * plot.perimeter;
+            answer += plot.locations.len() as u64 * plot.perimeter;
         }
     }
     return answer;
@@ -164,12 +163,91 @@ fn part1(contents: String) -> u64 {
 
 #[allow(non_snake_case)]
 fn part2(contents: String) -> u64 {
-    let mut answer: u64 = 0;
+    let mut garden: HashMap<char, Vec<GardenPlot>> = HashMap::new();
+    let mut map: Vec<Vec<char>> = Vec::new();
 
-    for (_line_num, line) in contents.lines().enumerate() {
+    // build map
+    for (_col_num, line) in contents.lines().enumerate() {
+        let mut garden_row: Vec<char> = Vec::new();
+        for (_row_num, c) in line.chars().enumerate() {
+            garden_row.push(c);
 
+            if !garden.contains_key(&c) {
+                let l: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+                garden.insert(c, vec![GardenPlot::new(0, l)]);
+            }
+        }
+
+        map.push(garden_row);
     }
 
+    // loop through the map and find all plots
+    for (row_num, row) in map.iter().enumerate() {
+        for (col_num, plant) in row.iter().enumerate() {
+            let plant_loc: Position = Position::new(col_num as i32, row_num as i32);
+            let plots: Option<&Vec<GardenPlot>> = garden.get(plant);
+
+            // this plant species has not been discovered or this specific location has not been visited yet
+            if plots.is_none() {
+                BreadthFirstSearch(&map, plant_loc, &mut garden, *plant);
+            } else {
+                // is_some
+                let mut found_location = false;
+                for plot in plots.unwrap() {
+                    if plot.locations.contains(&plant_loc) {
+                        found_location = true;
+                        break;
+                    }
+                }
+
+                if !found_location {
+                    // 'A' region exists, but this specific location within the 'A' has not been found
+                    BreadthFirstSearch(&map, plant_loc, &mut garden, *plant);
+                }
+            }
+        }
+    }
+
+    let mut answer: u64 = 0;
+    for (_, plots) in garden.iter() {
+        for plot in plots {
+            let mut sides: u64 = 0;
+            for p in plot.locations.iter() {
+                for (p1, p2) in [
+                            (Position::new(0, -1), Position::new(1, 0)), // north and east
+                            (Position::new(0,  1), Position::new(1, 0)), // south and east
+                            (Position::new(0,  1), Position::new(-1, 0)), // south and west
+                            (Position::new(0,  -1), Position::new(-1, 0)),] { // north and west
+                    let p1_mod: Position = p1 + *p;
+                    let p2_mod: Position = p2 + *p;
+                    let diag_mod: Position = p1 + p2 + *p;
+
+                    let mut same_count: u8 = 0;
+                    let mut different_count: u8 = 0;
+                    for p_mod in [p1_mod, p2_mod] {
+                        if p_mod.x < 0 || p_mod.y < 0 || p_mod.x >= map.first().unwrap().len() as i32 || p_mod.y >= map.len() as i32 ||
+                                map[p_mod.y as usize][p_mod.x as usize] != map[p.y as usize][p.x as usize] {
+                            // exterior corner
+                            different_count += 1;
+                        } else if p_mod.x >= 0 && p_mod.y >= 0 && p_mod.x < map.first().unwrap().len() as i32 && p_mod.y < map.len() as i32 &&
+                                diag_mod.x >= 0 && diag_mod.y >= 0 && diag_mod.x < map.first().unwrap().len() as i32 && diag_mod.y < map.len() as i32 &&
+                                map[p_mod.y as usize][p_mod.x as usize] == map[p.y as usize][p.x as usize] && 
+                                map[diag_mod.y as usize][diag_mod.x as usize] != map[p.y as usize][p.x as usize] {
+                            // interior corner
+                            same_count += 1;
+                        }
+                    }
+
+                    if same_count == 2 || different_count == 2 {
+                        sides += 1;
+                        //break;
+                    }
+                }
+            }
+
+            answer += sides * plot.locations.len() as u64;
+        }
+    }
     return answer;
 }
 
@@ -197,8 +275,32 @@ mod tests {
     }
 
     #[test]
-    fn test_part2() {
-        let contents: String = fs::read_to_string("src/test2.txt").expect("Should have been able to read the file");
-        assert_eq!(part2(contents.clone()), 22);
+    fn test_part2a() {
+        let contents: String = fs::read_to_string("src/test2a.txt").expect("Should have been able to read the file");
+        assert_eq!(part2(contents.clone()), 80);
+    }
+
+    #[test]
+    fn test_part2b() {
+        let contents: String = fs::read_to_string("src/test2b.txt").expect("Should have been able to read the file");
+        assert_eq!(part2(contents.clone()), 436);
+    }
+
+    #[test]
+    fn test_part2c() {
+        let contents: String = fs::read_to_string("src/test2c.txt").expect("Should have been able to read the file");
+        assert_eq!(part2(contents.clone()), 236);
+    }
+
+    #[test]
+    fn test_part2d() {
+        let contents: String = fs::read_to_string("src/test2d.txt").expect("Should have been able to read the file");
+        assert_eq!(part2(contents.clone()), 368);
+    }
+
+    #[test]
+    fn test_part2e() {
+        let contents: String = fs::read_to_string("src/test2e.txt").expect("Should have been able to read the file");
+        assert_eq!(part2(contents.clone()), 1206);
     }
 }
