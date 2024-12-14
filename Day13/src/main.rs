@@ -17,7 +17,7 @@ fn main() {
     println!("part 1: {} ({:.2?})", part1, elapsed);
 
     now = Instant::now();
-    let part2: u64 = part2(contents.clone());
+    let part2: u64 = part2(contents.clone(), 10_000_000_000_000); 
     elapsed = now.elapsed();
 
     println!("part 2: {} ({:.2?})", part2, elapsed);
@@ -78,7 +78,7 @@ fn part1(contents: String) -> u64 {
             // yposition = a_y * a + b_y * b
             // cost = a*3 + b*1
             if maximize_b {
-                let maxbpresses: u64 = numbxpresses.max(numbypresses).floor() as u64;
+                let maxbpresses: u64 = numbxpresses.min(numbypresses).floor() as u64;
 
                 let mut bpresses: u64 = maxbpresses;
                 loop {
@@ -100,7 +100,7 @@ fn part1(contents: String) -> u64 {
                     }
                 }
             } else {
-                let maxapresses: u64 = numaxpresses.max(numaypresses).floor() as u64;
+                let maxapresses: u64 = numaxpresses.min(numaypresses).floor() as u64;
 
                 let mut apresses: u64 = maxapresses;
                 loop {
@@ -138,14 +138,64 @@ fn part1(contents: String) -> u64 {
 
 
 #[allow(non_snake_case)]
-fn part2(contents: String) -> u64 {
+fn part2(contents: String, offset: u64) -> u64 {
+    let mut answer: u64 = 0;
+    let mut a_x: u64 = 0;
+    let mut a_y: u64 = 0;
+
+    let mut b_x: u64 = 0;
+    let mut b_y: u64 = 0;
 
     for (_line_num, line) in contents.lines().enumerate() {
+        if line.starts_with("Button A: ") {
+            let raw_equation: &str = line.strip_prefix("Button A: X+").unwrap();
+            a_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            a_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Button B: ") {
+            let raw_equation: &str = line.strip_prefix("Button B: X+").unwrap();
+            b_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            b_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Prize:") {
+            let raw_equation: &str = line.strip_prefix("Prize: X=").unwrap();
+            let prize_x = raw_equation.split(',').nth(0).unwrap()
+                                    .parse::<u64>().unwrap() + offset;
+            let prize_y = raw_equation.split(',').nth(1).unwrap()
+                                    .strip_prefix(" Y=").unwrap()
+                                    .parse::<u64>().unwrap() + offset;
 
+            // a_x*apresses + b_x*bpresses == prize_x
+            // a_x*apresses = prize_x - (b_x * bpresses)
+            // apresses = (prize_x - (b_x * bpresses)) / a_x
+
+            // a_y*apresses + b_y*bpresses == prize_y
+            // a_y*((prize_x - (b_x * bpresses)) / a_x) + b_y*bpresses = prize_y
+            // a_y*prize_x/a_x - a_y*b_x*bpresses/a_x + b_y*bpresses = prize_y
+            // bpresses*(-1*a_y*b_x/a_x + b_y) = prize_y - a_y*prize_x/a_x
+            // bpresses = (prize_y - a_y*prize_x/a_x) / (-1*a_y*b_x/a_x + b_y)
+            // bpresses = (prize_y - a_y*prize_x/a_x) / (b_y - a_y*b_x/a_x)
+
+            let bpresses: u64 = ((prize_y as f64 - a_y as f64*prize_x as f64/a_x as f64) / 
+                                (b_y as f64 - a_y as f64*b_x as f64/a_x as f64)).round() as u64;
+            let apresses: u64 = ((prize_x as f64 - (b_x as f64 * bpresses as f64)) / a_x as f64).round() as u64;
+
+            // plug and chug to see if we actually hit the target
+            if //apresses >= 0 && bpresses >= 0 && 
+                    a_x*apresses as u64 + b_x*bpresses as u64 == prize_x && 
+                    a_y*apresses as u64 + b_y*bpresses as u64 == prize_y {
+                // found a winner, calculate the cost
+                let cost: u64 = (apresses as u64)*(BUTTON_A_COST as u64) + (bpresses as u64)*(BUTTON_B_COST as u64);
+                answer += cost;
+            }
+
+        }
     }
 
-
-    let mut answer: u64 = 0;
     return answer;
 }
 
@@ -162,7 +212,8 @@ mod tests {
 
     #[test]
     fn test_part2() {
+        // part 2 doesn't have any tests... :(
         let contents: String = fs::read_to_string("src/test2.txt").expect("Should have been able to read the file");
-        assert_eq!(part2(contents.clone()), 772);
+        assert_eq!(part2(contents.clone(), 0), 480);
     }
 }
