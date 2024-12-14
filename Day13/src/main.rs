@@ -1,9 +1,8 @@
-mod position;
-
 use std::fs;
 use std::time::Instant;
-use std::collections::{HashMap, HashSet};
-use position::{Position, PositionBuildHasher};
+
+const BUTTON_A_COST: f64 = 3.0;
+const BUTTON_B_COST: f64 = 1.0;
 
 #[allow(non_snake_case)]
 fn main() {
@@ -28,13 +27,111 @@ fn main() {
 
 #[allow(non_snake_case)]
 fn part1(contents: String) -> u64 {
+    let mut answer: u64 = 0;
+    let mut a_x: u64 = 0;
+    let mut a_y: u64 = 0;
+
+    let mut b_x: u64 = 0;
+    let mut b_y: u64 = 0;
+
+    let mut prize_x: u64 = 0;
+    let mut prize_y: u64 = 0;
 
     for (_line_num, line) in contents.lines().enumerate() {
+        if line.starts_with("Button A: ") {
+            let raw_equation: &str = line.strip_prefix("Button A: X+").unwrap();
+            a_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            a_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Button B: ") {
+            let raw_equation: &str = line.strip_prefix("Button B: X+").unwrap();
+            b_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            b_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Prize:") {
+            let raw_equation: &str = line.strip_prefix("Prize: X=").unwrap();
+            prize_x = raw_equation.split(',').nth(0).unwrap()
+                                    .parse::<u64>().unwrap();
+            prize_y = raw_equation.split(',').nth(1).unwrap()
+                                    .strip_prefix(" Y=").unwrap()
+                                    .parse::<u64>().unwrap();
+        } else {
+            // see how many buttons presses it takes to reach the target
+            // determine which is more efficient to optimize (a or b) by maximizing the button that has
+            // the biggest distance/ticket 
+            let a_distance: f64 = ((a_x*a_x + a_y*a_y) as f64).sqrt();
+            let b_distance: f64 = ((b_x*b_x + b_y*b_y) as f64).sqrt();
+            let maximize_b: bool = a_distance / BUTTON_A_COST <= b_distance / BUTTON_B_COST;
+            
+            let numaxpresses: f64 = prize_x as f64 / a_x as f64;
+            let numbxpresses: f64 = prize_x as f64 / b_x as f64;
+            let numaypresses: f64 = prize_y as f64 / a_y as f64;
+            let numbypresses: f64 = prize_y as f64 / b_y as f64;
 
+            // maximize either a or b in the below equations 
+            // depending on which give more distance / cost
+            // xposition = a_x * a + b_x * b
+            // yposition = a_y * a + b_y * b
+            // cost = a*3 + b*1
+            if maximize_b {
+                let maxbpresses: u64 = numbxpresses.max(numbypresses).floor() as u64;
+
+                let mut bpresses: u64 = maxbpresses;
+                loop {
+                    // solving for a in -> xposition = a_x * a + b_x * b
+                    let apresses: u64 = (prize_x.saturating_sub(bpresses * b_x)) / a_x as u64; 
+
+                    // now plug and chug to see if we actually hit the target
+                    if a_x*apresses + b_x*bpresses == prize_x && a_y*apresses + b_y*bpresses == prize_y {
+                        // found a winner, calculate the cost
+                        let cost: u64 = apresses*(BUTTON_A_COST as u64) + bpresses*(BUTTON_B_COST as u64);
+                        answer += cost;
+                        break;
+                    }
+
+                    if bpresses == 0 {
+                        break;
+                    } else {
+                        bpresses -= 1;
+                    }
+                }
+            } else {
+                let maxapresses: u64 = numaxpresses.max(numaypresses).floor() as u64;
+
+                let mut apresses: u64 = maxapresses;
+                loop {
+                    // solve for b in -> xposition = a_x * a + b_x * b
+                    let bpresses: u64 = (prize_x.saturating_sub(apresses * a_x)) / b_x as u64;
+
+                    // now plug and chug to see if we actually hit the target
+                    if a_x*apresses + b_x*bpresses == prize_x && a_y*apresses + b_y*bpresses == prize_y {
+                        // found a winner, calcualte the cost
+                        let cost: u64 = apresses*(BUTTON_A_COST as u64) + bpresses*(BUTTON_B_COST as u64);
+                        answer += cost;
+                    }
+
+                    if apresses == 0 {
+                        break;
+                    } else {
+                        apresses -= 1;
+                    }
+                }
+            }
+
+            // reset the variables
+            a_x = 0;
+            a_y = 0;
+            b_x = 0;
+            b_y = 0;
+            prize_x = 0;
+            prize_y = 0;
+        }
     }
 
-
-    let mut answer: u64 = 0;
     return answer;
 }
 
