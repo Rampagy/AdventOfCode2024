@@ -68,6 +68,7 @@ pub fn szudzik_pairing (x: u64, y: u64) -> u64 {
     };
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct PositionBuildHasher;
 
 impl BuildHasher for PositionBuildHasher {
@@ -78,6 +79,7 @@ impl BuildHasher for PositionBuildHasher {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct PositionHasher(u64);
 
 impl Hasher for PositionHasher {
