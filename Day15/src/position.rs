@@ -104,3 +104,30 @@ impl ops::Add<Position> for Position {
         Position::new(self.x.wrapping_add(_rhs.x), self.y.wrapping_add(_rhs.y))
     }
 }
+
+// overload the subtract operator
+impl ops::Sub<Position> for Position {
+    type Output = Position;
+
+    fn sub(self, _rhs: Position) -> Position {
+        Position::new(self.x.wrapping_sub(_rhs.x), self.y.wrapping_sub(_rhs.y))
+    }
+}
+
+// overload the multiply operator
+impl ops::Mul<Position> for Position {
+    type Output = Position;
+
+    fn mul(self, _rhs: Position) -> Position {
+        Position::new(self.x.wrapping_mul(_rhs.x), self.y.wrapping_mul(_rhs.y))
+    }
+}
+
+// overload the multiply operator
+impl ops::Div<Position> for Position {
+    type Output = Position;
+
+    fn div(self, _rhs: Position) -> Position {
+        Position::new(self.x.wrapping_div(_rhs.x), self.y.wrapping_div(_rhs.y))
+    }
+}

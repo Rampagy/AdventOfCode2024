@@ -121,8 +121,11 @@ fn part2(contents: String) -> u64 {
                         map_row.push('[');
                         map_row.push(']');
                     } else if c == '@' {
-                        robot = Position::new(col_num as i32, row_num as i32);
+                        robot = Position::new(2*col_num as i32, row_num as i32);
                         map_row.push('@');
+                        map_row.push('.');
+                    } else {
+                        map_row.push('.');
                         map_row.push('.');
                     }
                 }
@@ -145,10 +148,12 @@ fn part2(contents: String) -> u64 {
 
         let mut rock_queue: VecDeque<Position> = VecDeque::from([robot + robot_offset]);
         let mut temp_map: Vec<Vec<char>> = map.clone();
+        let mut moved_locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
 
         // move robot to new location
         temp_map[robot.y as usize][robot.x as usize] = '.';
         temp_map[(robot.y + robot_offset.y) as usize][(robot.x + robot_offset.x) as usize] = '@';
+        moved_locations.insert(robot);
 
         let mut successful_move: bool = true;
         while !rock_queue.is_empty() {
@@ -164,30 +169,47 @@ fn part2(contents: String) -> u64 {
                 // add new position to rock_queue and update the temp_map
                 rock_queue.push_back(current + robot_offset);
                 temp_map[(current.y+robot_offset.y) as usize][(current.x+robot_offset.x) as usize] = '[';
+                moved_locations.insert(current);
 
-                // TODO: if direction is north or south additionally add the other side of the rock to the rock_queue and update temp map
-                if robot_offset == Position::new(0, -1) {
-                     // north
-                     // TODO
-                } else if robot_offset == Position::new(0, 1) {
-                    // south
-                    // TODO
+                // check the opposite direction of the move to see what should be put in current's old location
+                if !moved_locations.contains(&(current + Position::new(0, -robot_offset.y))) {
+                    temp_map[current.y as usize][current.x as usize] = '.';
                 }
 
+                // if direction is north or south additionally add the other side of the rock to the rock_queue and update temp map
+                if robot_offset == Position::new(0, -1) || robot_offset == Position::new(0, 1) {
+                    temp_map[(current.y + robot_offset.y) as usize][(current.x + robot_offset.x + 1) as usize] = ']';
+                    rock_queue.push_back(current + robot_offset + Position::new(1, 0));
+                    moved_locations.insert(current + Position::new(1, 0));
+
+                    // check the opposite direction of the move to see what should be put in current's old location
+                    if !moved_locations.contains(&(current + Position::new(1, -robot_offset.y))) {
+                        temp_map[current.y as usize][(current.x + 1) as usize] = '.';
+                    }
+                }
             } else if map[current.y as usize][current.x as usize] == ']' {
                 // right side of a rock
                 // add new position to rock_queue and update the temp_map
                 rock_queue.push_back(current + robot_offset);
                 temp_map[(current.y+robot_offset.y) as usize][(current.x+robot_offset.x) as usize] = ']';
+                moved_locations.insert(current);
 
-                // TODO: if direction is north or south additionally add the other side of the rock to the rock_queue and update temp map
-                if robot_offset == Position::new(0, -1) {
-                    // north
-                    // TODO
-               } else if robot_offset == Position::new(0, 1) {
-                   // south
-                   // TODO
-               }
+                // check the opposite direction of the move to see what should be put in current's old location
+                if !moved_locations.contains(&(current + Position::new(0, -robot_offset.y))) {
+                    temp_map[current.y as usize][current.x as usize] = '.';
+                }
+
+                // if direction is north or south additionally add the other side of the rock to the rock_queue and update temp map
+                if robot_offset == Position::new(0, -1) || robot_offset == Position::new(0, 1) {
+                    temp_map[(current.y + robot_offset.y) as usize][(current.x + robot_offset.x - 1) as usize] = '[';
+                    rock_queue.push_back(current + robot_offset + Position::new(-1, 0));
+                    moved_locations.insert(current + Position::new(-1, 0));
+
+                    // check the opposite direction of the move to see what should be put in current's old location
+                    if !moved_locations.contains(&(current + Position::new(-1, -robot_offset.y))) {
+                        temp_map[current.y as usize][(current.x - 1) as usize] = '.';
+                    }
+                }
             } else {
                 // empty location - no changes
             }
@@ -195,13 +217,29 @@ fn part2(contents: String) -> u64 {
 
         if successful_move {
             map = temp_map;
+            robot = robot + robot_offset;
         }
+
+        /*
+        // print map
+        for row in map.clone() {
+            for character in row {
+                print!("{}", character);
+            }
+            println!();
+        }
+        println!();
+        */
     }
 
     let mut answer: u64 = 0;
-    /*for b in boxes {
-        answer += 100 * b.y as u64 + b.x as u64;
-    }*/
+    for (row_num, row) in map.iter().enumerate() {
+        for (col_num, char) in row.iter().enumerate() {
+            if *char == '[' {
+                answer += 100 * row_num as u64 + col_num as u64;
+            }
+        }
+    }
     return answer;
 }
 
@@ -223,8 +261,14 @@ mod tests {
     }
 
     #[test]
-    fn test_part2() {
-        let contents: String = fs::read_to_string("src/test2.txt").expect("Should have been able to read the file");
+    fn test_part2a() {
+        let contents: String = fs::read_to_string("src/test2a.txt").expect("Should have been able to read the file");
+        assert_eq!(part2(contents.clone()), 618);
+    }
+
+    #[test]
+    fn test_part2b() {
+        let contents: String = fs::read_to_string("src/test2b.txt").expect("Should have been able to read the file");
         assert_eq!(part2(contents.clone()), 9021);
     }
 }
