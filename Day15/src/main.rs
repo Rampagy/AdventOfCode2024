@@ -23,7 +23,7 @@ fn main() {
     let part2: u64 = part2(contents.clone()); 
     elapsed = now.elapsed();
 
-    println!("part 2: {} ({:.2?})", part2, elapsed); // 777 too low, 778 too low
+    println!("part 2: {} ({:.2?})", part2, elapsed);
 }
 
 fn valid_robot_position(robot: Position, robot_offset: Position, 
