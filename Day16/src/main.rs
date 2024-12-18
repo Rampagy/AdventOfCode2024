@@ -34,7 +34,6 @@ pub fn optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position
     let mapWidth: usize = weighted_map[0].len();
     let mapHeight: usize = weighted_map.len();
 
-    let mut path: Vec<Position> = Vec::with_capacity(1 as usize);
     if start.x < 0 || start.y < 0 || goal.x >= mapWidth as i32 || goal.y >= mapHeight as i32 ||
        start == goal || mapWidth < 2 || mapHeight < 2 {
         return None;
@@ -72,10 +71,6 @@ pub fn optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position
         if current == goal {
             // exit
             break;
-        }
-
-        if current == Position::new(12, 1) {
-            _count += 1;
         }
 
         /* Search surrounding neighbors */
@@ -120,7 +115,7 @@ pub fn optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position
                 }
 
                 /* check if it is on the closed list */
-                if close_set.contains(&(neighbor, neighbor_direction)) && neighbor_gscore <= *gscore.get(&(neighbor, neighbor_direction)).unwrap_or(&0.0) {
+                if close_set.contains(&(neighbor, neighbor_direction)) && neighbor_gscore < *gscore.get(&(neighbor, neighbor_direction)).unwrap_or(&0.0) {
                     /* remove neighbor from closed list */
                     close_set.remove(&(neighbor, neighbor_direction));
                 }
@@ -141,8 +136,7 @@ pub fn optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position
         }
     }
 
-    let cost: Option<u64> = Some(gscore.get(&(current, current_direction)).unwrap().round() as u64);
-    return cost;
+    return Some(gscore.get(&(current, current_direction)).unwrap().round() as u64);
 }
 
 
@@ -184,8 +178,7 @@ fn part1(contents: String) -> u64 {
         map.push(row);
     }
 
-    let answer: u64 = optimized_dijkstras_search(&map, start, end).unwrap_or(0);
-    return answer;
+    return optimized_dijkstras_search(&map, start, end).unwrap_or(0);;
 }
 
 
@@ -238,5 +231,17 @@ mod tests {
     fn test_part1f() {
         let contents: String = fs::read_to_string("src/test1f.txt").expect("Should have been able to read the file");
         assert_eq!(part1(contents.clone()), 10040);
+    }
+
+    #[test]
+    fn test_part2a() {
+        let contents: String = fs::read_to_string("src/test2a.txt").expect("Should have been able to read the file");
+        assert_eq!(part1(contents.clone()), 45);
+    }
+
+    #[test]
+    fn test_part2b() {
+        let contents: String = fs::read_to_string("src/test2b.txt").expect("Should have been able to read the file");
+        assert_eq!(part1(contents.clone()), 64);
     }
 }
