@@ -7,3 +7,7 @@ no idea the proper way to do part 2.  I guess and checked until I got it right..
 part 1: 215987200 (75.70µs)
 part 2: 8050 (68.67ms)
 ```
+
+## algorithm
+
+loop iterations and modulus vs remainder

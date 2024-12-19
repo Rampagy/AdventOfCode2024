@@ -49,20 +49,20 @@ fn part1(contents: String) -> u64 {
 #[allow(non_snake_case)]
 fn check_good(report: Vec<u64>) -> bool {
     let mut level_delta: i64 = 0;
-        for i in 1..report.len() {
-            let delta: i64 = report[i] as i64 - report[i-1] as i64;
-            if delta > 0 && delta < 4 {
-                level_delta += 1;
-            } else if delta < 0 && delta > -4 {
-                level_delta -= 1;
-            }
+    for i in 1..report.len() {
+        let delta: i64 = report[i] as i64 - report[i-1] as i64;
+        if delta > 0 && delta < 4 {
+            level_delta += 1;
+        } else if delta < 0 && delta > -4 {
+            level_delta -= 1;
         }
+    }
 
-        if level_delta.abs() as usize == report.len()-1 {
-            return true;
-        } else {
-            return false;
-        }
+    if level_delta.abs() as usize == report.len()-1 {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 #[allow(non_snake_case)]
