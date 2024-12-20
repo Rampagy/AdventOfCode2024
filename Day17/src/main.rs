@@ -93,6 +93,15 @@ impl cpu_registers {
             _ => value, // everything else return the value (7 isn't valid, so not sure what else to do with it)
         }
     }
+
+    fn run_program(&mut self) -> () {
+        // loop through the whole program
+        while self.instructionpointer < self.program.len()-1 {
+            self.execute_instruction();
+        }
+
+        return;
+    }
 }
 
 
@@ -136,22 +145,46 @@ fn part1(contents: String,
 }
 
 
+fn depth_first_search(cpu: &mut cpu_registers, a: u64, depth: u64) -> u64 {
+    for o in 0..8 as u64 {
+        let astart: u64 = (a<<3) | o;
+        cpu.RegA = astart;
+        cpu.RegB = 0;
+        cpu.RegC = 0;
+        cpu.console.clear();
+        cpu.instructionpointer = 0;
+        cpu.run_program();
+
+        if cpu.program == cpu.console {
+            println!("{}", astart);
+            return astart;
+        } else if cpu.program.get((cpu.program.len() as u64 - depth  - 1) as usize).unwrap() == cpu.console.first().unwrap() {
+            // found a match - check the next digit
+            depth_first_search(cpu, astart, depth+1);
+        } else {
+            // dead end - skip this octal
+        }
+    }
+
+    // if you get here then you need to go backwards and try some other 
+
+    return 0;
+}
+
+
+
 
 #[allow(non_snake_case)]
 fn part2(contents: String) -> u64 {
     let mut cpu: cpu_registers = cpu_registers::new();
 
     for (_line_num, line) in contents.lines().enumerate() {
-        if line.starts_with("Register A:") {
-            cpu.RegA = line.strip_prefix("Register A: ").unwrap().parse::<u64>().unwrap();
-        } else if line.starts_with("Register B:") {
-            cpu.RegB = line.strip_prefix("Register B: ").unwrap().parse::<u64>().unwrap();
-        } else if line.starts_with("Register C:") {
-            cpu.RegC = line.strip_prefix("Register C: ").unwrap().parse::<u64>().unwrap();
-        } else if line.starts_with("Program:") {
+        if line.starts_with("Program:") {
             cpu.program = line.strip_prefix("Program: ").unwrap().split(',').map(|x| x.parse::<u64>().unwrap()).collect();
         }
     }
+
+    return depth_first_search(&mut cpu, 0, 0);
 
     // what this program does:
     // 2,4   b = a % 8
@@ -178,8 +211,8 @@ fn part2(contents: String) -> u64 {
     // now what about c:
     // c has no effect because it gets overwritten (by a/(1<<b)) before it is used
 
-
-    for i in (0o1000000000000000..0o1000000000001767 as u64).step_by(1) {
+    /*
+    for i in (0o1000..0o1200 as u64).step_by(1) {
         let mut cpu_clone: cpu_registers = cpu.clone();
         cpu_clone.RegA = i;
 
@@ -195,9 +228,7 @@ fn part2(contents: String) -> u64 {
             cpu = cpu_clone;
             break;
         }
-    }
-
-    return cpu.RegA;
+    } */
 }
 
 
