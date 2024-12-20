@@ -145,7 +145,7 @@ fn part1(contents: String,
 }
 
 
-fn depth_first_search(cpu: &mut cpu_registers, a: u64, depth: u64) -> u64 {
+fn depth_first_search(cpu: &mut cpu_registers, a: u64, depth: u64) -> Option<u64> {
     for o in 0..8 as u64 {
         let astart: u64 = (a<<3) | o;
         cpu.RegA = astart;
@@ -156,19 +156,20 @@ fn depth_first_search(cpu: &mut cpu_registers, a: u64, depth: u64) -> u64 {
         cpu.run_program();
 
         if cpu.program == cpu.console {
-            println!("{}", astart);
-            return astart;
+            return Some(astart);
         } else if cpu.program.get((cpu.program.len() as u64 - depth  - 1) as usize).unwrap() == cpu.console.first().unwrap() {
             // found a match - check the next digit
-            depth_first_search(cpu, astart, depth+1);
+            let answer: Option<u64> = depth_first_search(cpu, astart, depth+1);
+            if answer.is_some() {
+                // only return if there is an answer
+                return answer;
+            }
         } else {
             // dead end - skip this octal
         }
     }
 
-    // if you get here then you need to go backwards and try some other 
-
-    return 0;
+    return None;
 }
 
 
@@ -184,7 +185,7 @@ fn part2(contents: String) -> u64 {
         }
     }
 
-    return depth_first_search(&mut cpu, 0, 0);
+    return depth_first_search(&mut cpu, 0, 0).unwrap();
 
     // what this program does:
     // 2,4   b = a % 8
