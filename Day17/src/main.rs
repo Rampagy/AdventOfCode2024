@@ -170,9 +170,7 @@ fn part2(contents: String) -> u64 {
     // so we know the program always ends with RegA being zero
     // astart value = 8^(length of program)
     // 35184372088832 <= a < 281474976710656
-    // a < 106184372088832
-    // a < 39084372088832
-    // 36184372088832 < a
+    // 100000100 and the bottom 4 octal digits add up to between 8 and 16?
 
     // what we know about b:
     // b has no effect because it gets overwritten (by a%8) before it is used
@@ -181,7 +179,7 @@ fn part2(contents: String) -> u64 {
     // c has no effect because it gets overwritten (by a/(1<<b)) before it is used
 
 
-    for i in (35_184_372_088_832..281_474_976_710_656 as u64).step_by(1_000_000_000_000) {
+    for i in (0o1000000000000000..0o1000000000001767 as u64).step_by(1) {
         let mut cpu_clone: cpu_registers = cpu.clone();
         cpu_clone.RegA = i;
 
@@ -190,10 +188,10 @@ fn part2(contents: String) -> u64 {
             cpu_clone.execute_instruction();
         }
 
-        println!("a:{} b:{} c:{}   {}", i, 0, 0, cpu_clone.console.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(","));
+        println!("a:{:#o} {:#b}   {}", i, i, cpu_clone.console.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(","));
 
         if cpu_clone.console == cpu.program {
-            println!("a:{} b:{} c:{}", i, 0, 0);
+            println!("a:{}", i);
             cpu = cpu_clone;
             break;
         }
