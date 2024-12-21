@@ -1,8 +1,8 @@
 # Day18
 
-
 ```
-
+part 1: 292 (1.64ms)
+part 2: 58:44 (92.10ms)
 ```
 
 ## algorithm
