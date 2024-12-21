@@ -94,7 +94,7 @@ fn part1(contents: String, time_saved: u64) -> u64 {
     // get a path with no cheats
     let path: Vec<Position> = bfs(&map, start, end);
 
-    let mut valid_skips:u64 = 0;
+    let mut valid_skips: u64 = 0;
     // go through each position on the path and check if it's a valid skip
     for (pindex, p) in path.iter().enumerate() {
         for offset in p.get_directions() {
@@ -118,7 +118,7 @@ fn part1(contents: String, time_saved: u64) -> u64 {
         }
     }
 
-    return 0;
+    return valid_skips;
 }
 
 
