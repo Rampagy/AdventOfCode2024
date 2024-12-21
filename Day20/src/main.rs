@@ -2,7 +2,7 @@ mod position;
 
 use std::fs;
 use std::time::Instant;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use position::{Position, PositionBuildHasher};
 
 #[allow(non_snake_case)]
@@ -25,8 +25,42 @@ fn main() {
 }
 
 fn bfs (map: &Vec<Vec<u8>>, start: Position, end: Position) -> Vec<Position> {
-    // TODO
-    return Vec::new();
+    let mut path: Vec<Position> = Vec::new();
+
+    let mut open: VecDeque<Position> = VecDeque::new();
+    let mut closed: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+    let mut came_from: HashMap<Position, Position, PositionBuildHasher> = HashMap::with_hasher(PositionBuildHasher);
+
+    open.push_back(start);
+    closed.insert(start);
+
+    let mut current: Position;
+    while !open.is_empty() {
+        current = open.pop_front().unwrap();
+
+        for neighbor in current.get_surrounding_positions() {
+            if map[neighbor.y as usize][neighbor.x as usize] != 255 && !closed.contains(&neighbor) {
+                came_from.insert(neighbor, current);
+                open.push_back(neighbor);
+                closed.insert(neighbor);
+
+                if neighbor == end {
+                    // trace back and return the path
+
+                    current = end;
+                    while current != start {
+                        path.push(current);
+                        current = *came_from.get(&current).unwrap();
+                    }
+                    path.push(current);
+                    path.reverse();
+                    return path;
+                }
+            }
+        }
+    }
+
+    return path;
 }
 
 #[allow(non_snake_case)]
@@ -57,14 +91,34 @@ fn part1(contents: String, time_saved: u64) -> u64 {
         map.push(row);
     }
 
-    let mut cache: HashMap<Position, u64, PositionBuildHasher> = HashMap::with_hasher(PositionBuildHasher);
-    let mut cheat_paths: u64 = 0;
-
     // get a path with no cheats
     let path: Vec<Position> = bfs(&map, start, end);
 
+    let mut valid_skips:u64 = 0;
+    // go through each position on the path and check if it's a valid skip
+    for (pindex, p) in path.iter().enumerate() {
+        for offset in p.get_directions() {
+            let neighbor: Position = *p + offset;
+            if map[neighbor.y as usize][neighbor.x as usize] == 255 {
+                let neighbors_neighbor: Position = neighbor + offset;
+                if neighbors_neighbor.x >= 0 && neighbors_neighbor.y >= 0 && 
+                    neighbors_neighbor.x < map[0].len() as i32 && neighbors_neighbor.y < map.len() as i32 && 
+                    map[neighbors_neighbor.y as usize][neighbors_neighbor.x as usize] != 255 {
+                        // jump found (could be backwards)
+                        let nn_index: usize = path.iter().position(|&x| x == neighbors_neighbor).unwrap();
+                        if nn_index > pindex {
+                            // valid forward jump
+                            let delta: usize = nn_index - pindex - 2;
+                            if delta >= time_saved as usize {
+                                valid_skips += 1;
+                            }
+                        }
+                }
+            }
+        }
+    }
 
-    return cheat_paths;
+    return 0;
 }
 
 

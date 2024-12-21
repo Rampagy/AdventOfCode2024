@@ -33,6 +33,15 @@ impl Position {
             Position::new(self.x - 1, self.y + 0),  // west
         ]
     }
+
+    pub fn get_directions(&self) -> [Position; 4] {
+        return [
+            Position::new(0, -1),  // north
+            Position::new(1, 0),  // east
+            Position::new(0, 1),  // south
+            Position::new(-1, 0),  // west
+        ]
+    }
 }
 
 
