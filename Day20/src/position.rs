@@ -31,7 +31,7 @@ impl Position {
             Position::new(self.x + 1, self.y + 0),  // east
             Position::new(self.x + 0, self.y + 1),  // south
             Position::new(self.x - 1, self.y + 0),  // west
-        ]
+        ];
     }
 
     pub fn get_directions(&self) -> [Position; 4] {
@@ -40,7 +40,11 @@ impl Position {
             Position::new(1, 0),  // east
             Position::new(0, 1),  // south
             Position::new(-1, 0),  // west
-        ]
+        ];
+    }
+
+    pub fn manhattan_distance(&self, a: Position) -> usize {
+        return (self.x - a.x).abs() as usize + (self.y - a.y).abs() as usize;
     }
 }
 

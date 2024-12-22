@@ -18,7 +18,7 @@ fn main() {
     println!("part 1: {} ({:.2?})", part1, elapsed);
 
     now = Instant::now();
-    let part2: u64 = part2(contents.clone());
+    let part2: u64 = part2(contents.clone(), 100);
     elapsed = now.elapsed();
 
     println!("part 2: {} ({:.2?})", part2, elapsed);
@@ -124,14 +124,83 @@ fn part1(contents: String, time_saved: u64) -> u64 {
 
 
 #[allow(non_snake_case)]
-fn part2(contents: String) -> u64 {
+fn part2(contents: String, time_saved: usize) -> u64 {
+    let mut map: Vec<Vec<u8>> = Vec::new();
+    let mut start: Position = Position::new(-1, -1);
+    let mut end: Position = Position::new(-1, -1);
 
-
-    for (_line_num, line) in contents.lines().enumerate() {
-        
+    for (row_num, line) in contents.lines().enumerate() {
+        let mut row: Vec<u8> = Vec::new();
+        for (col_num, c) in line.chars().enumerate() {
+            if c == '#' {
+                // unwalkable
+                row.push(255);
+            } else if c == 'S' {
+                // start
+                row.push(0);
+                start.x = col_num as i32;
+                start.y = row_num as i32;
+            } else if c == 'E' {
+                row.push(0);
+                end.x = col_num as i32;
+                end.y = row_num as i32;
+            } else {
+                row.push(0);
+            }
+        }
+        map.push(row);
     }
 
-    return 0;
+    // get a path with no cheats
+    let path: Vec<Position> = bfs(&map, start, end);
+
+    // TODO: manhattan distance from neighbor of current position 
+    // that's a wall to another position that further in the path 
+
+    // for i in 0 to (path.len-100)
+    // for j in (i+100) to path.len
+    // path length = manhattan distance between path[i] and path[j] + path.len() - j + i
+    // check if this path length is time_saved shorter than path.len()
+    let mut valid_skips: u64 = 0;
+    for i in 0..=(path.len()-time_saved) {
+        for j in (i+time_saved - 1)..path.len() {
+            let manhattan: usize = path[i].manhattan_distance(path[j]);
+            let shortcut_path_len: usize = i + manhattan + path.len() - j;
+
+            if manhattan <= 20 && path.len() - shortcut_path_len >= time_saved as usize {
+                // new path is at least X shorter than the whole path
+                valid_skips += 1;
+            }
+        }
+    }
+
+
+    /*
+    // go through each position on the path and check if it's a valid skip
+    for (pindex, p) in path.iter().enumerate() {
+        for offset in p.get_directions() {
+            let neighbor: Position = *p + offset;
+            if map[neighbor.y as usize][neighbor.x as usize] == 255 {
+                let neighbors_neighbor: Position = neighbor + offset;
+                if neighbors_neighbor.x >= 0 && neighbors_neighbor.y >= 0 && 
+                    neighbors_neighbor.x < map[0].len() as i32 && neighbors_neighbor.y < map.len() as i32 && 
+                    map[neighbors_neighbor.y as usize][neighbors_neighbor.x as usize] != 255 {
+                        // jump found (could be backwards)
+                        let nn_index: usize = path.iter().position(|&x| x == neighbors_neighbor).unwrap();
+                        if nn_index > pindex {
+                            // valid forward jump
+                            let delta: usize = nn_index - pindex - 2;
+                            if delta >= time_saved as usize {
+                                valid_skips += 1;
+                            }
+                        }
+                }
+            }
+        }
+    } 
+    */
+
+    return valid_skips;
 }
 
 
@@ -155,6 +224,12 @@ mod tests {
     #[test]
     fn test_part2a() {
         let contents: String = fs::read_to_string("src/test2a.txt").expect("Should have been able to read the file");
-        assert_eq!(part2(contents.clone()), 16);
+        assert_eq!(part2(contents.clone(), 55), 193);
+    }
+
+    #[test]
+    fn test_part2b() {
+        let contents: String = fs::read_to_string("src/test2a.txt").expect("Should have been able to read the file");
+        assert_eq!(part2(contents.clone(), 50), 285);
     }
 }
