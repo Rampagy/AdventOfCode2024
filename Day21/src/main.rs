@@ -2,8 +2,8 @@ mod position;
 
 use std::fs;
 use std::time::Instant;
-use std::collections::{HashMap, HashSet};
-use position::{Position, PositionBuildHasher};
+use std::collections::HashMap;
+use position::Position;
 
 #[allow(non_snake_case)]
 fn main() {
@@ -70,37 +70,102 @@ fn part1(contents: String, num_direction_pads: u64) -> u64 {
             let numpad_next_pos: Position = *numpad_positions.get(numpad_next_char.to_digit(10).unwrap_or(10) as usize).unwrap();
             let position_delta: Position = numpad_next_pos - current_position;
 
-            // prioritize > over ^ over v over <
-            if position_delta.x > 0 {
-                // >
-                for _ in 0..position_delta.x.abs() {
-                    numpad_path.push('>');
+            
+            if (numpad_next_pos.y < 3 && current_position.y < 3) || (numpad_next_pos.x > 0 && current_position.x > 0) {
+                // prioritize < over ^ over v over >
+                if position_delta.x < 0 {
+                    // <
+                    for _ in 0..position_delta.x.abs() {
+                        numpad_path.push('<');
+                    }
+                }
+
+                if position_delta.y < 0 {
+                    // ^
+                    for _ in 0..position_delta.y.abs() {
+                        numpad_path.push('^');
+                    }
+                }
+
+                if position_delta.y > 0 {
+                    // v
+                    for _ in 0..position_delta.y.abs() {
+                        numpad_path.push('v');
+                    }
+                }
+
+                if position_delta.x > 0 {
+                    // >
+                    for _ in 0..position_delta.x.abs() {
+                        numpad_path.push('>');
+                    }
+                }
+                numpad_path.push('A');
+            } else {
+                // going to (or from) 0/A, use a different priority to avoid the blank spot
+                // hardcode the paths
+                if current_position == Position::new(1, 3) { // currently at '0'
+                    if numpad_next_char == '1' {
+                        // going to '1' from '0' - optimal path is ^<A
+                        numpad_path.append(&mut vec!['^','<','A']);
+                    } else if numpad_next_char == '4' {
+                        // going to '4' from '0' - optimal path is ^^<A
+                        numpad_path.append(&mut vec!['^','^','<','A']);
+                    } else if numpad_next_char == '7' {
+                        // going to '7' from '0' - optimal path is ^^^<A
+                        numpad_path.append(&mut vec!['^','^','^','<','A']);
+                    } else {
+                        panic!("uh oh");
+                    }
+                } else if current_position == Position::new(0, 2) { // currently at '1'
+                    if numpad_next_char == '0' {
+                        // going to '0' from '1' - optimal path is >vA
+                        numpad_path.append(&mut vec!['>','v','A']);
+                    } else if numpad_next_char == 'A' {
+                        // going to 'A' from '1' - optimal path is >>vA
+                        numpad_path.append(&mut vec!['>','>','v','A']);
+                    } else {
+                        panic!("uh oh");
+                    }
+                } else if current_position == Position::new(2, 3) { // currently at 'A'
+                    if numpad_next_char == '1' {
+                        // going to '1' from 'A' - optimal path is ^<<A
+                        numpad_path.append(&mut vec!['^','<','<','A']);
+                    } else if numpad_next_char == '4' {
+                        // going to '4' from 'A' - optimal path is ^^<<A
+                        numpad_path.append(&mut vec!['^','^','<','<','A']);
+                    } else if numpad_next_char == '7' {
+                        // going to '7' from 'A' - optimal path is ^^^<<A
+                        numpad_path.append(&mut vec!['^','^','^','<','<','A']);
+                    } else {
+                        panic!("uh oh");
+                    }
+                } else if current_position == Position::new(0, 1) { // currently at '4'
+                    if numpad_next_char == '0' {
+                        // going to '0' from '4' - optimal path is >vvA
+                        numpad_path.append(&mut vec!['>','v','v','A']);
+                    } else if numpad_next_char == 'A' {
+                        // going to 'A' from '4' - optimal path is >>vvA
+                        numpad_path.append(&mut vec!['>','>','v','v','A']);
+                    } else {
+                        panic!("uh oh");
+                    }
+                } else if current_position == Position::new(0, 0) { // currently at '7'
+                    if numpad_next_char == '0' {
+                        // going to '0' from '7' - optimal path is >vvvA
+                        numpad_path.append(&mut vec!['>','v','v','v','A']);
+                    } else if numpad_next_char == 'A' {
+                        // going to 'A' from '7' - optimal path is >>vvvA
+                        numpad_path.append(&mut vec!['>','>','v','v','v','A']);
+                    } else {
+                        panic!("uh oh");
+                    }
+                } else {
+                    panic!("uh oh");
                 }
             }
 
-            if position_delta.y < 0 {
-                // ^
-                for _ in 0..position_delta.y.abs() {
-                    numpad_path.push('^');
-                }
-            }
-
-            if position_delta.y > 0 {
-                // v
-                for _ in 0..position_delta.y.abs() {
-                    numpad_path.push('v');
-                }
-            }
-
-            if position_delta.x < 0 {
-                // <
-                for _ in 0..position_delta.x.abs() {
-                    numpad_path.push('<');
-                }
-            }
-
-
-            numpad_path.push('A');
+            
             current_position = numpad_next_pos;
         }
 
