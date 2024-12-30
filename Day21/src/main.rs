@@ -315,7 +315,8 @@ fn part2(contents: String, num_direction_pads: u64) -> u64 {
     dirpad_positions_LUT.insert('v', Position::new(1, 1));
     dirpad_positions_LUT.insert('<', Position::new(0, 1));
 
-
+    // declared at a high level to allow cache re-use between codes
+    let mut cache: HashMap<(Vec<char>, u64), u64> = HashMap::new();
     for seq in sequences {
         let mut current_position: Position = Position::new(2, 3);
         let mut numpad_path: Vec<char> = Vec::new();
@@ -424,7 +425,7 @@ fn part2(contents: String, num_direction_pads: u64) -> u64 {
 
         // do a recursive search with depth to find the length of the sequence
         let mut count: u64 = 0;
-        recursive_search(numpad_path, num_direction_pads, &mut count, &dirpad_positions_LUT);
+        recursive_search(numpad_path, num_direction_pads, &mut count, &dirpad_positions_LUT, &mut cache);
         let numeric_part_of_code: u64 = seq.iter().collect::<String>()
                                             .trim_end_matches('A')
                                             .parse::<u64>().unwrap();
@@ -435,30 +436,40 @@ fn part2(contents: String, num_direction_pads: u64) -> u64 {
 }
 
 #[allow(non_snake_case)]
-fn recursive_search(sequence: Vec<char>, depth: u64, count: &mut u64, dirpad_positions_LUT: &HashMap<char, Position>) -> () {
-    // find the locations of the 'A' in subsequence
-    let mut pos_a: Vec<usize> = vec![0];
-    for (i, ch) in sequence.clone().iter().enumerate() {
-        if *ch == 'A' {
-            pos_a.push(i+1);
+fn recursive_search(sequence: Vec<char>, depth: u64, count: &mut u64, dirpad_positions_LUT: &HashMap<char, Position>, cache: &mut HashMap<(Vec<char>, u64), u64>) -> () {
+    if let Some(length) = cache.get(&(sequence.clone(), depth)) {
+        // cache hit
+        *count += *length;
+        println!("cache hit!");
+    } else {
+        // find the locations of the 'A' in subsequence
+        let mut pos_a: Vec<usize> = vec![0];
+        for (i, ch) in sequence.clone().iter().enumerate() {
+            if *ch == 'A' {
+                pos_a.push(i+1);
+            }
         }
-    }
 
-    for i in 0..pos_a.len()-1 {
-        let mut subsequence_vec: Vec<char> = Vec::new();
-        for j in pos_a[i]..pos_a[i+1] {
-            subsequence_vec.push(sequence[j]);
-        }
+        for i in 0..pos_a.len()-1 {
+            let mut subsequence_vec: Vec<char> = Vec::new();
+            for j in pos_a[i]..pos_a[i+1] {
+                subsequence_vec.push(sequence[j]);
+            }
 
-        // generate the new depth-1 sequence
-        let new_subsequence: Vec<char> = get_new_sequence(subsequence_vec.clone(), dirpad_positions_LUT);
+            let prev_count: u64 = *count;
+            if depth-1 > 0 {
+                // generate the new depth-1 sequence
+                let new_subsequence: Vec<char> = get_new_sequence(subsequence_vec.clone(), dirpad_positions_LUT);
 
-        if depth-1 > 0 {
-            // search this subsequence for count
-            recursive_search(new_subsequence, depth-1, count, dirpad_positions_LUT);
-        } else {
-            // recursive search is done, increment count
-            *count += subsequence_vec.len() as u64;
+                // search this subsequence for count
+                recursive_search(new_subsequence, depth-1, count, dirpad_positions_LUT, cache);
+            } else {
+                // recursive search is done, increment count
+                *count += subsequence_vec.len() as u64;
+            }
+
+            // insert the count and prev_count delta into a hashmap with the subsequence_vec as the key
+            cache.insert((subsequence_vec, depth), *count - prev_count);
         }
     }
 
@@ -566,6 +577,7 @@ fn get_new_sequence(seq: Vec<char>, dirpad_positions_LUT: &HashMap<char, Positio
 
     return new_seq;
 }
+
 
 #[cfg(test)] #[allow(non_snake_case)]
 mod tests {
