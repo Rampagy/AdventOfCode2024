@@ -16,6 +16,9 @@ the whole program is based on the octal numbering system becuase of the modulus(
 
 you basically you loop through 0..8 and run the program to see if it gives you the last value of the program. if it does then you shift that value left 3 and start looping through the next octal (0..8).  you do this over and over until you get program == console, then you exit the depth first search becuase that is your answer.  This works becuase when you loop through the octal you are starting at 0 so the first answer you get will be the lowest.
 
+## notes/experimentation
+
+```
 a:0o1000000000000754 b:0 c:0   2,4,6,1,1,1,1,1,1,1,1,1,1,1,3,0     001000000000000000000000000000000000000111101100  492    1EC
 a:0o1000000000000764 b:0 c:0   2,4,6,1,1,1,1,1,1,1,1,1,1,1,3,0     001000000000000000000000000000000000000111110100  500    1F4
 a:0o1000000000001415 b:0 c:0   2,4,5,0,1,1,1,1,1,1,1,1,1,1,3,0     001000000000000000000000000000000000001100001101  781    30D
@@ -1042,3 +1045,4 @@ a:0o1000000000001763 0b1000000000000000000000000000000000001111110011   3,0,6,0,
 a:0o1000000000001764 0b1000000000000000000000000000000000001111110100   2,0,6,0,1,1,1,1,1,1,1,1,1,1,3,0
 a:0o1000000000001765 0b1000000000000000000000000000000000001111110101   3,0,6,0,1,1,1,1,1,1,1,1,1,1,3,0
 a:0o1000000000001766 0b1000000000000000000000000000000000001111110110   0,0,6,0,1,1,1,1,1,1,1,1,1,1,3,0
+```
