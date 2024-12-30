@@ -85,7 +85,6 @@ fn part1(contents: String, num_direction_pads: u64) -> u64 {
                 }
             }
 
-
             if position_delta.y > 0 {
                 // v
                 for _ in 0..position_delta.y.abs() {
@@ -101,10 +100,6 @@ fn part1(contents: String, num_direction_pads: u64) -> u64 {
             }
 
 
-
-
-
-
             numpad_path.push('A');
             current_position = numpad_next_pos;
         }
@@ -116,48 +111,103 @@ fn part1(contents: String, num_direction_pads: u64) -> u64 {
 
         println!("{}", out);
 
-        // TODO: direction pads
         let mut direction_pads: Vec<Position> = vec![*dirpad_positions_LUT.get(&'A').unwrap(); (num_direction_pads-1) as usize];
         for robot_depth in 0..num_direction_pads-1 {
             let mut new_numpad_path: Vec<char> = Vec::new();
             for ch in numpad_path.clone() {
                 let new_pointer_location: Position = *dirpad_positions_LUT.get(&ch).unwrap();
-                let delta_pointer_location: Position = new_pointer_location - *direction_pads.get(robot_depth as usize).unwrap();
+                let current_pointer_location: Position = *direction_pads.get(robot_depth as usize).unwrap();
 
                 // set the new direction pad location
                 direction_pads[robot_depth as usize] = new_pointer_location;
 
-                // prioritize > over v over ^ over <
-                if delta_pointer_location.x > 0 {
-                    // >
-                    for _ in 0..delta_pointer_location.x.abs() {
-                        new_numpad_path.push('>');
-                    }
+                // direction pad is small enough that I'm just hardcoding the optimal path
+                if current_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() {
+                    // from '>' to '^'  :  only possible way is <^A
+                    new_numpad_path.append(&mut vec!['<','^','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() {
+                    // from '^' to '>'  :  only possible way is v>A
+                    new_numpad_path.append(&mut vec!['v','>','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() {
+                    // from 'A' to 'v'  :  only possible way is <vA
+                    new_numpad_path.append(&mut vec!['<','v','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() {
+                    // from 'v' to 'A'  :  only possible way is ^>A
+                    new_numpad_path.append(&mut vec!['^','>','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() {
+                    // from 'A' to '^'  :  only possible way is <A
+                    new_numpad_path.append(&mut vec!['<','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() {
+                    // from '^' to 'A'  :  only possible way is >A
+                    new_numpad_path.append(&mut vec!['>','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() {
+                    // from 'v' to '^'  :  only possible way is ^A
+                    new_numpad_path.append(&mut vec!['^','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() {
+                    // from '^' to 'v'  :  only possible way is vA
+                    new_numpad_path.append(&mut vec!['v','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() {
+                    // from 'A' to '>'  :  only possible way is vA
+                    new_numpad_path.append(&mut vec!['v','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() {
+                    // from '>' to 'A'  :  only possible way is ^A
+                    new_numpad_path.append(&mut vec!['^','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() {
+                    // from 'v' to '>'  :  only possible way is >A
+                    new_numpad_path.append(&mut vec!['>','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() {
+                    // from '>' to 'v'  :  only possible way is <A
+                    new_numpad_path.append(&mut vec!['<','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() {
+                    // from '<' to 'v'  :  only possible way is >A
+                    new_numpad_path.append(&mut vec!['>','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'v').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() {
+                    // from 'v' to '<'  :  only possible way is <A
+                    new_numpad_path.append(&mut vec!['<','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() {
+                    // from '<' to '>'  :  only possible way is >>A
+                    new_numpad_path.append(&mut vec!['>','>','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'>').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() {
+                    // from '>' to '<'  :  only possible way is <<A
+                    new_numpad_path.append(&mut vec!['<','<','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() {
+                    // from '<' to '^'  :  only possible way is >^A
+                    new_numpad_path.append(&mut vec!['>','^','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'^').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() {
+                    // from '^' to '<'  :  only possible way is v<A
+                    new_numpad_path.append(&mut vec!['v','<','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() {
+                    // from '<' to 'A'  :  only possible way is >>^A
+                    new_numpad_path.append(&mut vec!['>','>','^','A']);
+                } else if current_pointer_location == *dirpad_positions_LUT.get(&'A').unwrap() && 
+                        new_pointer_location == *dirpad_positions_LUT.get(&'<').unwrap() {
+                    // from 'A' to '<'  :  only possible way is v<<A
+                    new_numpad_path.append(&mut vec!['v','<','<','A']);
+                } else if current_pointer_location == new_pointer_location {
+                    // if new and previous are the same only insert an 'A'
+                    new_numpad_path.push('A');
+                } else {
+                    panic!("uh oh");
                 }
-
-                if delta_pointer_location.y > 0 {
-                    // v
-                    for _ in 0..delta_pointer_location.y.abs() {
-                        new_numpad_path.push('v');
-                    }
-                }
-
-                if delta_pointer_location.y < 0 {
-                    // ^
-                    for _ in 0..delta_pointer_location.y.abs() {
-                        new_numpad_path.push('^');
-                    }
-                }
-
-                if delta_pointer_location.x < 0 {
-                    // <
-                    for _ in 0..delta_pointer_location.x.abs() {
-                        new_numpad_path.push('<');
-                    }
-                }
-
-                // activate after every arrow
-                new_numpad_path.push('A');
             }
 
             // override the existing numpad_path
@@ -212,5 +262,4 @@ mod tests {
         let contents: String = fs::read_to_string("src/test2a.txt").expect("Should have been able to read the file");
         assert_eq!(part2(contents.clone()), 193);
     }
-
 }
