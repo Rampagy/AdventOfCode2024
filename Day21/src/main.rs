@@ -440,7 +440,6 @@ fn recursive_search(sequence: Vec<char>, depth: u64, count: &mut u64, dirpad_pos
     if let Some(length) = cache.get(&(sequence.clone(), depth)) {
         // cache hit
         *count += *length;
-        println!("cache hit!");
     } else {
         // find the locations of the 'A' in subsequence
         let mut pos_a: Vec<usize> = vec![0];
@@ -450,13 +449,13 @@ fn recursive_search(sequence: Vec<char>, depth: u64, count: &mut u64, dirpad_pos
             }
         }
 
+        let prev_count: u64 = *count;
         for i in 0..pos_a.len()-1 {
             let mut subsequence_vec: Vec<char> = Vec::new();
             for j in pos_a[i]..pos_a[i+1] {
                 subsequence_vec.push(sequence[j]);
             }
 
-            let prev_count: u64 = *count;
             if depth-1 > 0 {
                 // generate the new depth-1 sequence
                 let new_subsequence: Vec<char> = get_new_sequence(subsequence_vec.clone(), dirpad_positions_LUT);
@@ -467,10 +466,10 @@ fn recursive_search(sequence: Vec<char>, depth: u64, count: &mut u64, dirpad_pos
                 // recursive search is done, increment count
                 *count += subsequence_vec.len() as u64;
             }
-
-            // insert the count and prev_count delta into a hashmap with the subsequence_vec as the key
-            cache.insert((subsequence_vec, depth), *count - prev_count);
         }
+
+        // insert the count and prev_count delta into a hashmap with the subsequence_vec as the key
+        cache.insert((sequence, depth), *count - prev_count);
     }
 
     return;

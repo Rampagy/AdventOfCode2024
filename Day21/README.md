@@ -1,12 +1,13 @@
 # Day21
 
 ```
-
+part 1: 125742 (88.50µs)
+part 2: 157055032722640 (1.01ms)
 ```
 
 ## algorithm
 
-top down dynamic programming
+top down dynamic programming with caching/memory/memorization
 
 ## notes/experimentation
 
