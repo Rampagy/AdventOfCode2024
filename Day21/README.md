@@ -9,6 +9,10 @@ part 2: 157055032722640 (955.90µs)
 
 top down dynamic programming with caching/memory/memorization
 
+part 1 uses a loop
+
+part 2 uses recursion
+
 ## notes/experimentation
 
 bottom is truth
