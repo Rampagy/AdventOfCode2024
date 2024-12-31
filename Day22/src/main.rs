@@ -96,21 +96,15 @@ fn part2(contents: String) -> u64 {
         let mut price_count: u64 = 0;
         for (buyer_idx, buyer_price) in buyer_deltas_prices.clone().iter().enumerate() {
             for i in SEQUENCE_LENGTH..ITERATIONS {
-                let mut all_idx_match: bool = true;
-                for j in 0..SEQUENCE_LENGTH {
-                    let idx: usize = i-j-1;
-                    if potential[SEQUENCE_LENGTH-j-1] != buyer_price[idx] {
-                        all_idx_match = false;
+                if potential[0] == buyer_price[i-4] && 
+                    potential[1] == buyer_price[i-3] && 
+                    potential[2] == buyer_price[i-2] && 
+                    potential[3] == buyer_price[i-1] {
+                        // add the current bananas
+                        price_count += secrets[buyer_idx][i]%10;
+
+                        // skip the rest of the iterations for this buyer
                         break;
-                    }
-                }
-
-                if all_idx_match {
-                    // add the current bananas
-                    price_count += secrets[buyer_idx][i]%10;
-
-                    // skip the rest of the iterations for this buyer
-                    break;
                 }
             }
         }
