@@ -66,21 +66,7 @@ fn part1(contents: String) -> u64 {
         }
     }
 
-    for (parent, children) in networks.iter() {
-        if children.len() == 2 {
-            if parent.starts_with('t') {
-                answer += 1;
-            } else {
-                // check if the children start with a 't' if the parent doesn't
-                for child in children {
-                    if child.starts_with('t') {
-                        answer += 1;
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    // TODO: traverse graph and see if it can get back to the original parent at depth=3
 
     return answer;
 }
