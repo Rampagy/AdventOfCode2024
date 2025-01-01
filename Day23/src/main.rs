@@ -24,8 +24,59 @@ fn main() {
 
 
 #[allow(non_snake_case)]
+fn dfs(graph: &HashMap<String, HashSet<String>>, parent: String, original: &String, depth: u64, prev_starts_with_t: bool, 
+        paths: &mut Vec<HashSet<String>>, mut came_from: HashMap<String, String>) -> ()
+    {
+    if depth > 0 {
+        for child in graph.get(&(parent.clone())).unwrap() {
+            if *child != parent && *child != *original {
+                let starts_with_t: bool = if !prev_starts_with_t { child.starts_with('t') } else { true };
+                came_from.insert(child.to_string(), parent.to_string());
+                dfs(graph, child.to_string(), original, depth-1, starts_with_t, paths, came_from.clone());
+            }
+        }
+    } else {
+        // check if any of the children of parent are 'orignal'
+        if graph.get(&parent).unwrap().contains(&original.clone()) && prev_starts_with_t {
+            // potential solution (length of 3)
+            // trace the path back
+            let mut path: HashSet<String> = HashSet::default();
+            let mut current: String = parent;
+            path.insert(original.to_string());
+            while current != original.to_string() {
+                path.insert(current.clone());
+                current = came_from.get(&current.to_string()).unwrap().clone().to_string();
+            }
+
+            let mut already_exists: bool = false;
+            for found_path in paths.clone() {
+                let mut count: u64 = 0;
+                for point in path.clone() {
+                    if found_path.contains(&point) {
+                        count += 1;
+                    }
+                }
+
+                if count >= path.len() as u64 {
+                    already_exists = true;
+                    break;
+                }
+            }
+
+            // check to make sure this path doesn't already exist before adding it
+            if !already_exists {
+                // add the path to a mutably refrenced vector of hashsets
+                paths.push(path);
+            }
+        }
+    }
+
+    return;
+}
+
+
+#[allow(non_snake_case)]
 fn part1(contents: String) -> u64 {
-    let mut answer: u64 = 0;
     let mut networks: HashMap<String, HashSet<String>> = HashMap::default();
 
     for (_row_num, line) in contents.lines().enumerate() {
@@ -66,9 +117,14 @@ fn part1(contents: String) -> u64 {
         }
     }
 
-    // TODO: traverse graph and see if it can get back to the original parent at depth=3
+    // traverse graph and see if it can get back to the original parent at depth=3 (2 if zero indexed)
+    let mut paths: Vec<HashSet<String>> = Vec::new();
+    let came_from: HashMap<String, String> = HashMap::default();
+    for k in networks.keys() {
+        dfs(&networks, k.to_string(), k, 2, k.starts_with('t'), &mut paths, came_from.clone());
+    }
 
-    return answer;
+    return paths.len() as u64;
 }
 
 
