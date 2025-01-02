@@ -3,6 +3,7 @@ use std::time::Instant;
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
+
 #[allow(non_snake_case)]
 fn main() {
     let contents: String = fs::read_to_string("src/input.txt").expect("Should have been able to read the file");
@@ -16,11 +17,12 @@ fn main() {
     println!("part 1: {} ({:.2?})", part1, elapsed);
 
     now = Instant::now();
-    let part2: u64 = part2(contents.clone());
+    let part2: String = part2(contents.clone(), 4);
     elapsed = now.elapsed();
 
     println!("part 2: {} ({:.2?})", part2, elapsed);
 }
+
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct Operation {
@@ -100,7 +102,7 @@ fn part1(contents: String) -> u64 {
         }
     }
 
-    // reconstruct the value starting with z00
+    // construct the value starting with z00
     let mut answer: u64 = 0;
     let mut current_bit: u8 = 0;
     let mut current_bit_as_str: String = format!("z{:0>2}", current_bit);
@@ -115,15 +117,14 @@ fn part1(contents: String) -> u64 {
 }
 
 
-
 #[allow(non_snake_case)]
-fn part2(contents: String) -> u64 {
+fn part2(contents: String, num_swapped: u64) -> String {
     for (_row_num, line) in contents.lines().enumerate() {
 
     }
 
 
-    return 0;
+    return "".to_string();
 }
 
 
@@ -146,6 +147,6 @@ mod tests {
     #[test]
     fn test_part2a() {
         let contents: String = fs::read_to_string("src/test2a.txt").expect("Should have been able to read the file");
-        assert_eq!(part2(contents.clone()), 0);
+        assert_eq!(part2(contents.clone(), 2), "z00,z01,z02,z05".to_string());
     }
 }
