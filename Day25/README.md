@@ -6,10 +6,8 @@
 
 ## algorithm
 
-### part 1 
+adds and loops
 
-
-### part 2
 
 
 
