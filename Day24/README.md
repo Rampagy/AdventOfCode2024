@@ -1,7 +1,8 @@
 # Day 24
 
 ```
-
+part 1: 49430469426918 (419.50µs)
+part 2: fbq,pbv,qff,qnw,qqp,z16,z23,z36 (8.43ms)
 ```
 
 ## algorithm
