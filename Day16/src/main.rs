@@ -29,7 +29,7 @@ fn main() {
 
 
 #[allow(non_snake_case)]
-pub fn optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position, 
+fn optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position, 
                                     goal: Position ) -> Option<u64> {
     let mapWidth: usize = weighted_map[0].len();
     let mapHeight: usize = weighted_map.len();

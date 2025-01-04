@@ -1,5 +1,6 @@
 use super::position::{Position, PositionBuildHasher};
 
+use std::u64;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::cmp::Ordering;
 use itertools::Itertools;
@@ -1855,4 +1856,688 @@ pub fn d13_part2(contents: String) -> String {
     }
 
     return format!("{}", answer);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d14_part1(contents: String) -> String {
+    let width: u64 = 101;
+    let height: u64 = 103;
+    let seconds: u64 = 100;
+
+    let mut robots: Vec<(Position, Position)> = Vec::new();
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        let p: &str = line.split_ascii_whitespace().nth(0).unwrap().strip_prefix("p=").unwrap();
+        let v: &str = line.split_ascii_whitespace().nth(1).unwrap().strip_prefix("v=").unwrap();
+
+        let px: i64 = p.split(',').nth(0).unwrap().parse::<i64>().unwrap();
+        let py: i64 = p.split(',').nth(1).unwrap().parse::<i64>().unwrap();
+
+        let vx: i64 = v.split(',').nth(0).unwrap().parse::<i64>().unwrap();
+        let vy: i64 = v.split(',').nth(1).unwrap().parse::<i64>().unwrap();
+
+        robots.push(
+            (Position::new(px as i32,py as i32), 
+            Position::new(vx as i32, vy as i32))
+        );
+    }
+
+    for i in 0..robots.len() {
+        let (p, v) = robots.get_mut(i).unwrap();
+        *p = *p + Position::new(v.x * seconds as i32, v.y * seconds as i32);
+        p.x = p.x.rem_euclid(width as i32);
+        p.y = p.y.rem_euclid(height as i32);
+    }
+
+    let (mut q1, mut q2, mut q3, mut q4): (u64, u64, u64, u64) = (0, 0, 0, 0);
+    for (p, _) in robots {
+        if p.x < (width as i32 - 1) / 2 && p.y < (height as i32 - 1) / 2 {
+            // q1
+            q1 += 1;
+        } else if p.x > (width as i32 - 1) / 2 && p.y < (height as i32 - 1) / 2 {
+            // q2
+            q2 += 1;
+        } else if p.x < (width as i32 - 1) / 2 && p.y > (height as i32 - 1) / 2 {
+            // q3
+            q3 += 1;
+        } else if p.x > (width as i32 - 1) / 2 && p.y > (height as i32 - 1) / 2 {
+            // q4
+            q4 += 1;
+        }
+    }
+
+    let answer: u64 = q1*q2*q3*q4;
+    return format!("{}", answer);
+}
+
+
+
+#[allow(non_snake_case)]
+pub fn d14_part2(contents: String) -> String {
+    let width: u64 = 101;
+    let height: u64 = 103;
+
+    let mut robots: Vec<(Position, Position)> = Vec::new();
+    let mut robots_len: usize = 0;
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        let p: &str = line.split_ascii_whitespace().nth(0).unwrap().strip_prefix("p=").unwrap();
+        let v: &str = line.split_ascii_whitespace().nth(1).unwrap().strip_prefix("v=").unwrap();
+
+        let px: i64 = p.split(',').nth(0).unwrap().parse::<i64>().unwrap();
+        let py: i64 = p.split(',').nth(1).unwrap().parse::<i64>().unwrap();
+
+        let vx: i64 = v.split(',').nth(0).unwrap().parse::<i64>().unwrap();
+        let vy: i64 = v.split(',').nth(1).unwrap().parse::<i64>().unwrap();
+
+        robots.push(
+            (Position::new(px as i32,py as i32), 
+            Position::new(vx as i32, vy as i32))
+        );
+        robots_len += 1;
+    }
+
+    let mut count: u64 = 0;
+    let mut least_danger: u64 = std::u64::MAX;
+    loop {
+        let mut found_tree: bool = false;
+
+        // move the robots 1 second
+        for i in 0..robots_len {
+            let (p, v) = robots.get_mut(i).unwrap();
+            *p = *p + Position::new(v.x as i32, v.y as i32);
+            p.x = p.x.rem_euclid(width as i32);
+            p.y = p.y.rem_euclid(height as i32);
+        }
+
+        count += 1;
+
+        // calculate the danger
+        let (mut q1, mut q2, mut q3, mut q4): (u64, u64, u64, u64) = (0, 0, 0, 0);
+        for (p, _) in robots.clone() {
+            if p.x < (width as i32 - 1) / 2 && p.y < (height as i32 - 1) / 2 {
+                // q1
+                q1 += 1;
+            } else if p.x > (width as i32 - 1) / 2 && p.y < (height as i32 - 1) / 2 {
+                // q2
+                q2 += 1;
+            } else if p.x < (width as i32 - 1) / 2 && p.y > (height as i32 - 1) / 2 {
+                // q3
+                q3 += 1;
+            } else if p.x > (width as i32 - 1) / 2 && p.y > (height as i32 - 1) / 2 {
+                // q4
+                q4 += 1;
+            }
+        }
+
+        // check the safest positions
+        let danger: u64 = q1*q2*q3*q4;
+        if danger < least_danger { // christmas tree will be the least dangerous?
+            least_danger = danger;
+
+            for (p, _) in robots.clone() {
+                let mut adjacent_count: u64 = 0;
+                for i in 1..=10 {
+                    let adjacent: Position = p+Position::new(i, 0);
+                    for (other_robot, _) in robots.clone() {
+                        if other_robot != p && other_robot == adjacent {
+                            adjacent_count += 1;
+                        }
+                    }
+                }
+
+                if adjacent_count > 8 {
+                    found_tree = true;
+                    break;
+                }
+            }
+        }
+
+        if found_tree || count > 1_000_000 {
+            break;
+        }
+    }
+
+    return format!("{}", count);
+}
+
+fn valid_robot_position(robot: Position, robot_offset: Position, 
+            boxes:  HashSet<Position, PositionBuildHasher>, 
+            walls:  HashSet<Position, PositionBuildHasher>) -> Option<Position> {
+    // go until a wall or empty space
+    let new_robot: Position = robot + robot_offset;
+    if walls.contains(&new_robot) {
+        // wall
+        return None;
+    } else if boxes.contains(&new_robot) {
+        // check if movable box
+        return valid_robot_position(new_robot, robot_offset, boxes, walls);
+    } else {
+        // empty space
+        return Some(new_robot);
+    }
+}
+
+#[allow(non_snake_case)]
+pub fn d15_part1(contents: String) -> String {
+    let mut robot: Position = Position::new(0, 0);
+    let mut boxes: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+    let mut walls: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+
+    let mut capture_map: bool = true;
+    for (row_num, line) in contents.lines().enumerate() {
+        if line == "" {
+            capture_map = false;
+        } else {
+            if capture_map {
+                for (col_num, c) in line.chars().enumerate() {
+                    if c == '#' {
+                        walls.insert(Position::new(col_num as i32, row_num as i32));
+                    } else if c == 'O' {
+                        boxes.insert(Position::new(col_num as i32, row_num as i32));
+                    } else if c == '@' {
+                        robot = Position::new(col_num as i32, row_num as i32);
+                    }
+                }
+            } else {
+                for direction in line.chars() {
+                    let robot_offset: Position = 
+                            if direction == '^' { Position::new(0, -1) } //north
+                            else if direction == '>' { Position::new(1, 0) } // east
+                            else if direction == 'v' { Position::new(0, 1) } // south
+                            else if direction == '<' { Position::new(-1, 0) }  // west
+                            else { Position::new(0,0) };
+            
+                    let empty_location: Option<Position> = valid_robot_position(robot, robot_offset, boxes.clone(), walls.clone());
+                    if empty_location.is_some() {
+                        // basically this is swapping the rock that gets displaced with the empty location
+            
+                        // calculate new robot position
+                        robot = robot + robot_offset;
+            
+                        // remove box at robots new location
+                        boxes.remove(&robot);
+            
+                        // insert box at new location if it is not the robot
+                        if empty_location.unwrap() != robot {
+                            boxes.insert(empty_location.unwrap());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut answer: u64 = 0;
+    for b in boxes {
+        answer += 100 * b.y as u64 + b.x as u64;
+    }
+    return format!("{}", answer);
+}
+
+#[allow(non_snake_case)]
+pub fn d15_part2(contents: String) -> String {
+    let mut map: Vec<Vec<char>> = Vec::new();
+    let mut direction: Vec<char> = Vec::new();
+    let mut robot: Position = Position::new(0, 0);
+
+    let mut capture_map: bool = true;
+    for (row_num, line) in contents.lines().enumerate() {
+        if line == "" {
+            capture_map = false;
+        } else {
+            if capture_map {
+                let mut map_row: Vec<char> = Vec::new();
+                for (col_num, c) in line.chars().enumerate() {
+                    if c == '#' {
+                        map_row.push('#');
+                        map_row.push('#');
+                    } else if c == 'O' {
+                        map_row.push('[');
+                        map_row.push(']');
+                    } else if c == '@' {
+                        robot = Position::new(2*col_num as i32, row_num as i32);
+                        map_row.push('@');
+                        map_row.push('.');
+                    } else {
+                        map_row.push('.');
+                        map_row.push('.');
+                    }
+                }
+                map.push(map_row);
+            } else {
+                for c in line.chars() {
+                    direction.push(c);
+                }
+            }
+        }
+    }
+
+    for dir in direction {
+        let robot_offset: Position = 
+                if dir == '^' { Position::new(0, -1) } //north
+                else if dir == '>' { Position::new(1, 0) } // east
+                else if dir == 'v' { Position::new(0, 1) } // south
+                else if dir == '<' { Position::new(-1, 0) }  // west
+                else { Position::new(0,0) };
+
+        let mut rock_queue: VecDeque<Position> = VecDeque::from([robot + robot_offset]);
+        let mut temp_map: Vec<Vec<char>> = map.clone();
+        let mut moved_locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+
+        // move robot to new location
+        temp_map[robot.y as usize][robot.x as usize] = '.';
+        temp_map[(robot.y + robot_offset.y) as usize][(robot.x + robot_offset.x) as usize] = '@';
+        moved_locations.insert(robot);
+
+        let mut successful_move: bool = true;
+        while !rock_queue.is_empty() {
+            // get current and see if it can move
+            let current: Position = rock_queue.pop_front().unwrap();
+
+            if map[current.y as usize][current.x as usize] == '#' {
+                // wall - no changes
+                successful_move = false;
+                break;
+            } else if map[current.y as usize][current.x as usize] == '[' {
+                // left side of a rock
+                // add new position to rock_queue and update the temp_map
+                rock_queue.push_back(current + robot_offset);
+                temp_map[(current.y+robot_offset.y) as usize][(current.x+robot_offset.x) as usize] = '[';
+                moved_locations.insert(current);
+
+                // check the opposite direction of the move to see what should be put in current's old location
+                if !moved_locations.contains(&(current + Position::new(0, -robot_offset.y))) {
+                    temp_map[current.y as usize][current.x as usize] = '.';
+                }
+
+                // if direction is north or south additionally add the other side of the rock to the rock_queue and update temp map
+                if robot_offset == Position::new(0, -1) || robot_offset == Position::new(0, 1) {
+                    temp_map[(current.y + robot_offset.y) as usize][(current.x + robot_offset.x + 1) as usize] = ']';
+                    rock_queue.push_back(current + robot_offset + Position::new(1, 0));
+                    moved_locations.insert(current + Position::new(1, 0));
+
+                    // check the opposite direction of the move to see what should be put in current's old location
+                    if !moved_locations.contains(&(current + Position::new(1, -robot_offset.y))) {
+                        temp_map[current.y as usize][(current.x + 1) as usize] = '.';
+                    }
+                }
+            } else if map[current.y as usize][current.x as usize] == ']' {
+                // right side of a rock
+                // add new position to rock_queue and update the temp_map
+                rock_queue.push_back(current + robot_offset);
+                temp_map[(current.y+robot_offset.y) as usize][(current.x+robot_offset.x) as usize] = ']';
+                moved_locations.insert(current);
+
+                // check the opposite direction of the move to see what should be put in current's old location
+                if !moved_locations.contains(&(current + Position::new(0, -robot_offset.y))) {
+                    temp_map[current.y as usize][current.x as usize] = '.';
+                }
+
+                // if direction is north or south additionally add the other side of the rock to the rock_queue and update temp map
+                if robot_offset == Position::new(0, -1) || robot_offset == Position::new(0, 1) {
+                    temp_map[(current.y + robot_offset.y) as usize][(current.x + robot_offset.x - 1) as usize] = '[';
+                    rock_queue.push_back(current + robot_offset + Position::new(-1, 0));
+                    moved_locations.insert(current + Position::new(-1, 0));
+
+                    // check the opposite direction of the move to see what should be put in current's old location
+                    if !moved_locations.contains(&(current + Position::new(-1, -robot_offset.y))) {
+                        temp_map[current.y as usize][(current.x - 1) as usize] = '.';
+                    }
+                }
+            } else {
+                // empty location - no changes
+            }
+        }
+
+        if successful_move {
+            map = temp_map;
+            robot = robot + robot_offset;
+        }
+    }
+
+    let mut answer: u64 = 0;
+    for (row_num, row) in map.iter().enumerate() {
+        for (col_num, char) in row.iter().enumerate() {
+            if *char == '[' {
+                answer += 100 * row_num as u64 + col_num as u64;
+            }
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+#[allow(non_snake_case)]
+fn day16_optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position, 
+                                    goal: Position ) -> Option<u64> {
+    let mapWidth: usize = weighted_map[0].len();
+    let mapHeight: usize = weighted_map.len();
+
+    if start.x < 0 || start.y < 0 || goal.x >= mapWidth as i32 || goal.y >= mapHeight as i32 ||
+       start == goal || mapWidth < 2 || mapHeight < 2 {
+        return None;
+    }
+
+    /* Memory allocation */
+    let mut close_set: HashSet<(Position, Position)> = HashSet::with_capacity(mapHeight * mapWidth);
+    let mut came_from: HashMap<(Position, Position), (Position, Position)> = HashMap::with_capacity(mapHeight * mapWidth);
+    let mut gscore: HashMap<(Position, Position), f32> = HashMap::with_capacity(mapHeight * mapWidth);
+    let mut oheap: PriorityQueue<(Position, Position), OrderedFloat<f32>> = PriorityQueue::with_capacity(mapWidth + mapHeight);
+    let mut oheap_copy: HashMap<(Position, Position), f32> = HashMap::with_capacity(mapHeight * mapWidth);
+
+    let mut current: Position = start;
+    let mut neighbors: [Position; 4];
+    let mut current_direction: Position = Position::new(1, 0);
+
+    /* Add initial position to the search list */
+    gscore.insert((current, current_direction), 0.0);
+
+    /* Note: gscore is multiplied by -1 before being entered into the oheap
+     *  because of how big of a pain in the ass it is to switch it from a
+     *  max heap to a min heap */
+    oheap.push((start, Position::new(1, 0)), 
+                OrderedFloat::from(-1.0*(*gscore.get(&(current, current_direction)).unwrap_or(&0.0))));
+    oheap_copy.insert((start, Position::new(1, 0)), 
+                *gscore.get(&(current, current_direction)).unwrap_or(&0.0));
+
+    let mut _count: u32 = 0;
+    while !oheap.is_empty() {
+        _count += 1;
+        ((current, current_direction), _) = oheap.pop().unwrap();
+        oheap_copy.remove(&(current, current_direction));
+        close_set.insert((current, current_direction));
+
+        if current == goal {
+            // exit
+            break;
+        }
+
+        /* Search surrounding neighbors */
+        neighbors = current.get_surrounding_positions();
+        for neighbor in neighbors {
+
+            /* if the neighbor is a valid position */
+            if neighbor.x >= 0 && neighbor.y >= 0 && 
+                    neighbor.y < mapHeight as i32 && neighbor.x < mapWidth as i32 &&
+                    weighted_map[neighbor.y as usize][neighbor.x as usize] < 255 {
+
+                // track the neighbors current direction
+                let neighbor_direction: Position = neighbor - current;
+                let neighbor_gscore: f32 = *gscore.get(&(current, current_direction)).unwrap_or(&0.0) + 
+                                            weighted_map[neighbor.y as usize][neighbor.x as usize] as f32 + 
+                                            // use a default that it makes the start always point east to begin
+                                            day16_optimized_heuristic(
+                                                neighbor, 
+                                                current, 
+                                                came_from.get(&(current, current_direction))
+                                                    .unwrap_or(&(start + Position::new(-1, 0), Position::new(-1, 0))).0
+                                            );
+
+                /* if the neighbor is already on the open list check to see if the neighbor is better before updating it */
+                let in_open_list: bool = oheap_copy.contains_key(&(neighbor, neighbor_direction));
+                if in_open_list && neighbor_gscore < *gscore.get(&(neighbor, neighbor_direction)).unwrap_or(&0.0){
+                    /* track the node's parent */
+                    came_from.insert((neighbor, neighbor_direction), (current, current_direction));
+
+                    /* gscore = cost to get from the start to the current position */
+                    gscore.entry((neighbor, neighbor_direction)).and_modify(|val| *val = neighbor_gscore);
+
+                    /* update the neighbors values */
+                    oheap_copy.entry((neighbor, neighbor_direction)).and_modify(|val| *val = neighbor_gscore);
+
+                    /* remove the old gscore */
+                    oheap.remove(&(neighbor, neighbor_direction));
+
+                    /* Add the new fscore and sort */
+                    oheap.push((neighbor, neighbor_direction), OrderedFloat::from(-1.0*neighbor_gscore));
+                    continue;
+                }
+
+                /* check if it is on the closed list */
+                if close_set.contains(&(neighbor, neighbor_direction)) && neighbor_gscore < *gscore.get(&(neighbor, neighbor_direction)).unwrap_or(&0.0) {
+                    /* remove neighbor from closed list */
+                    close_set.remove(&(neighbor, neighbor_direction));
+                }
+
+                /* Add to the open list */
+                if !close_set.contains(&(neighbor, neighbor_direction)) && !in_open_list {
+                    /* track the node's parent */
+                    came_from.insert((neighbor, neighbor_direction), (current, current_direction));
+
+                    /* gscore = cost to get rom the start to the current position */
+                    gscore.insert((neighbor, neighbor_direction), neighbor_gscore);
+
+                    /* add to the open list */
+                    oheap_copy.insert((neighbor, neighbor_direction), neighbor_gscore);
+                    oheap.push((neighbor, neighbor_direction), OrderedFloat::from(-1.0*neighbor_gscore));
+                }
+            }
+        }
+    }
+
+    return Some(gscore.get(&(current, current_direction)).unwrap().round() as u64);
+}
+
+
+#[inline]
+fn day16_optimized_heuristic(neighbor: Position, current: Position, previous: Position) -> f32 {
+    let step_cost: f32 = (((neighbor.x - current.x) + (neighbor.y - current.y)) as f32).abs();
+    let turn_cost: f32 = if (previous.x - neighbor.x).abs() == 1 && 
+                            (previous.y - neighbor.y).abs() == 1 { 1000.0 } // turning 
+                        else if previous == neighbor { 2000.0 } // did a 180
+                        else { 0.0 }; // straight
+
+    return step_cost + turn_cost;
+}
+
+
+#[allow(non_snake_case)]
+pub fn d16_part1(contents: String) -> String {
+    let mut map: Vec<Vec<u8>> = Vec::new();
+    let mut start: Position = Position::new(0,0);
+    let mut end: Position = Position::new(0,0);
+
+    for (row_num, line) in contents.lines().enumerate() {
+        let mut row: Vec<u8> = Vec::new();
+        for (col_num, c) in line.chars().enumerate() {
+            if c == '#' {
+                row.push(255);
+            } else {
+                row.push(0);
+            }
+
+            if c == 'S' {
+                start = Position::new(col_num as i32, row_num as i32);
+            } else if c == 'E' {
+                end = Position::new(col_num as i32, row_num as i32);
+            }
+        }
+        map.push(row);
+    }
+
+    return format!("{}", day16_optimized_dijkstras_search(&map, start, end).unwrap_or(0));
+}
+
+
+#[allow(non_snake_case)]
+fn day16_optimized_dijkstras_search_p2(weighted_map: &Vec<Vec<u8>>, start: Position, goal: Position) -> Option<Vec<Vec<Position>>> {
+    let mapWidth: usize = weighted_map[0].len();
+    let mapHeight: usize = weighted_map.len();
+
+    if start.x < 0 || start.y < 0 || goal.x >= mapWidth as i32 || goal.y >= mapHeight as i32 ||
+       start == goal || mapWidth < 2 || mapHeight < 2 {
+        return None;
+    }
+
+    /* Memory allocation */
+    let mut close_set: HashSet<(Position, Position)> = HashSet::with_capacity(mapHeight * mapWidth);
+    let mut came_from: HashMap<(Position, Position), Vec<(Position, Position)>> = HashMap::with_capacity(mapHeight * mapWidth);
+    let mut gscore: HashMap<(Position, Position), f32> = HashMap::with_capacity(mapHeight * mapWidth);
+    let mut oheap: PriorityQueue<(Position, Position), OrderedFloat<f32>> = PriorityQueue::with_capacity(mapWidth + mapHeight);
+    let mut oheap_copy: HashMap<(Position, Position), f32> = HashMap::with_capacity(mapHeight * mapWidth);
+
+    let mut current: Position = start;
+    let mut neighbors: [Position; 4];
+    let mut current_direction: Position = Position::new(1, 0);
+
+    /* Add initial position to the search list */
+    gscore.insert((current, current_direction), 0.0);
+
+    /* Note: gscore is multiplied by -1 before being entered into the oheap
+     *  because of how big of a pain in the ass it is to switch it from a
+     *  max heap to a min heap */
+    oheap.push((start, Position::new(1, 0)), 
+                OrderedFloat::from(-1.0*(*gscore.get(&(current, current_direction)).unwrap_or(&0.0))));
+    oheap_copy.insert((start, Position::new(1, 0)), 
+                *gscore.get(&(current, current_direction)).unwrap_or(&0.0));
+
+    let mut _count: u32 = 0;
+    while !oheap.is_empty() {
+        _count += 1;
+        ((current, current_direction), _) = oheap.pop().unwrap();
+        oheap_copy.remove(&(current, current_direction));
+        close_set.insert((current, current_direction));
+
+        if current == goal {
+            // exit
+            break;
+        }
+
+        /* Search surrounding neighbors */
+        neighbors = current.get_surrounding_positions();
+        for neighbor in neighbors {
+
+            /* if the neighbor is a valid position */
+            if neighbor.x >= 0 && neighbor.y >= 0 && 
+                    neighbor.y < mapHeight as i32 && neighbor.x < mapWidth as i32 &&
+                    weighted_map[neighbor.y as usize][neighbor.x as usize] < 255 {
+
+                // track the neighbors current direction
+                let neighbor_direction: Position = neighbor - current;
+                let neighbor_gscore: f32 = *gscore.get(&(current, current_direction)).unwrap_or(&0.0) + 
+                                            weighted_map[neighbor.y as usize][neighbor.x as usize] as f32 + 
+                                            // use a default that it makes the start always point east to begin
+                                            day16_optimized_heuristic(
+                                                neighbor, 
+                                                current, 
+                                                came_from.get(&(current, current_direction))
+                                                    .unwrap_or(&vec![(start + Position::new(-1, 0), Position::new(-1, 0))]).first().unwrap().0
+                                            );
+
+                /* if the neighbor is already on the open list check to see if the neighbor is better before updating it */
+                let in_open_list: bool = oheap_copy.contains_key(&(neighbor, neighbor_direction));
+                if in_open_list && neighbor_gscore <= *gscore.get(&(neighbor, neighbor_direction)).unwrap_or(&0.0){
+                    /* track the node's parent */
+                    came_from.entry((neighbor, neighbor_direction)).or_insert_with(Vec::new).push((current, current_direction));
+
+                    /* gscore = cost to get from the start to the current position */
+                    gscore.entry((neighbor, neighbor_direction)).and_modify(|val| *val = neighbor_gscore);
+
+                    /* update the neighbors values */
+                    oheap_copy.entry((neighbor, neighbor_direction)).and_modify(|val| *val = neighbor_gscore);
+
+                    /* remove the old gscore */
+                    oheap.remove(&(neighbor, neighbor_direction));
+
+                    /* Add the new fscore and sort */
+                    oheap.push((neighbor, neighbor_direction), OrderedFloat::from(-1.0*neighbor_gscore));
+                    continue;
+                }
+
+                /* check if it is on the closed list */
+                if close_set.contains(&(neighbor, neighbor_direction)) && neighbor_gscore <= *gscore.get(&(neighbor, neighbor_direction)).unwrap_or(&0.0) {
+                    /* remove neighbor from closed list */
+                    close_set.remove(&(neighbor, neighbor_direction));
+                }
+
+                /* Add to the open list */
+                if !close_set.contains(&(neighbor, neighbor_direction)) && !in_open_list {
+                    /* track the node's parent */
+                    came_from.entry((neighbor, neighbor_direction)).or_insert_with(Vec::new).push((current, current_direction));
+
+                    /* gscore = cost to get rom the start to the current position */
+                    gscore.insert((neighbor, neighbor_direction), neighbor_gscore);
+
+                    /* add to the open list */
+                    oheap_copy.insert((neighbor, neighbor_direction), neighbor_gscore);
+                    oheap.push((neighbor, neighbor_direction), OrderedFloat::from(-1.0*neighbor_gscore));
+                }
+            }
+        }
+    }
+
+    // Reconstruct all paths
+    let mut paths: Vec<Vec<Position>> = Vec::new();
+    let mut stack: Vec<(Position, Position, Vec<Position>)> = Vec::new();
+    stack.push((goal, Position::new(0, -1), vec![goal])); // north
+    stack.push((goal, Position::new(1, 0), vec![goal])); // east
+    stack.push((goal, Position::new(0, 1), vec![goal])); // south
+    stack.push((goal, Position::new(-1, 0), vec![goal])); // west
+
+    while !stack.is_empty() {
+        let stack_option: Option<(Position, Position, Vec<Position>)> = stack.pop();
+        if stack_option.is_some() {
+            let (current_position, direction, path) = stack_option.unwrap();
+            let parent_option: Option<&Vec<(Position, Position)>> = came_from.get(&(current_position, direction));
+            if current_position == start {
+                // position == start
+                paths.push(path.clone());
+            } else if parent_option.is_some() {
+                for &(parent, parent_direction) in parent_option.unwrap() {
+                    let mut new_path: Vec<Position> = path.clone();
+                    new_path.push(parent);
+                    stack.push((parent, parent_direction, new_path));
+                }
+            }
+        }
+    }
+
+    return Some(paths);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d16_part2(contents: String) -> String {
+    let mut map: Vec<Vec<u8>> = Vec::new();
+    let mut start: Position = Position::new(0,0);
+    let mut end: Position = Position::new(0,0);
+
+    for (row_num, line) in contents.lines().enumerate() {
+        let mut row: Vec<u8> = Vec::new();
+        for (col_num, c) in line.chars().enumerate() {
+            if c == '#' {
+                row.push(255);
+            } else {
+                row.push(0);
+            }
+
+            if c == 'S' {
+                start = Position::new(col_num as i32, row_num as i32);
+            } else if c == 'E' {
+                end = Position::new(col_num as i32, row_num as i32);
+            }
+        }
+        map.push(row);
+    }
+
+    let paths: Option<Vec<Vec<Position>>> = day16_optimized_dijkstras_search_p2(&map, start, end);
+    let mut shortest_path: u64 = u64::MAX;
+    let mut path_positions: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+    if paths.is_some() {
+        for path in paths.unwrap() {
+            if (path.len() as u64) < shortest_path {
+                shortest_path = path.len() as u64;
+                path_positions.clear();
+            }
+            
+            if (path.len() as u64) == shortest_path {
+                // add all unique path positions
+                path_positions.extend(path);
+            }
+        }
+    }
+
+    return format!("{}", path_positions.len());
 }

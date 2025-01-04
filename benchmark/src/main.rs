@@ -38,6 +38,12 @@ fn main() {
     println!("{}", run_bench("day12.txt", &aoc::d12_part2, "d12p2", CENTISEC_ITERATIONS));
     println!("{}", run_bench("day13.txt", &aoc::d13_part1, "d13p1", MICROSEC_ITERATIONS));
     println!("{}", run_bench("day13.txt", &aoc::d13_part2, "d13p2", MICROSEC_ITERATIONS));
+    println!("{}", run_bench("day14.txt", &aoc::d14_part1, "d14p1", MICROSEC_ITERATIONS));
+    println!("{}", run_bench("day14.txt", &aoc::d14_part2, "d14p2", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day15.txt", &aoc::d15_part1, "d15p1", MILLISEC_ITERATIONS));
+    println!("{}", run_bench("day15.txt", &aoc::d15_part2, "d15p2", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day16.txt", &aoc::d16_part1, "d16p1", MILLISEC_ITERATIONS));
+    println!("{}", run_bench("day16.txt", &aoc::d16_part2, "d16p2", CENTISEC_ITERATIONS));
 }
 
 
