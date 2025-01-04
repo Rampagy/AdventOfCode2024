@@ -1,6 +1,10 @@
-use std::collections::HashMap;
-use std::cmp::Ordering;
+use super::position::{Position, PositionBuildHasher};
 
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::cmp::Ordering;
+use itertools::Itertools;
+use ordered_float::OrderedFloat;
+use priority_queue::PriorityQueue;
 
 #[allow(non_snake_case)]
 pub fn d01_part1(contents: String) -> String {
@@ -527,3 +531,1328 @@ pub fn d05_part2(contents: String) -> String {
     return format!("{}", answer);
 }
 
+#[allow(non_snake_case)]
+fn day06_turn_right(p: Position) -> Position {
+    let new_offset: Position = 
+    if p.x == 0 && p.y == -1 { // north
+        // east
+        Position::new(1, 0)
+    } else if p.x == 1 && p.y == 0 { // east
+        // south
+        Position::new(0, 1)
+    } else if p.x == 0 && p.y == 1 { // south
+        // west
+        Position::new(-1, 0)
+    } else if p.x == -1 && p.y == 0 { // west
+        // north
+        Position::new(0, -1)
+    } else {
+        // shouldn't get here
+        Position::new(0, 0)
+    };
+
+    return new_offset;
+}
+
+
+#[allow(non_snake_case)]
+pub fn d06_part1(contents: String) -> String {
+    let mut answer: u64 = 0;
+    let mut lab_map: HashSet<Position> = HashSet::new();
+    let mut visited_squares: HashSet<Position> = HashSet::new();
+    let mut lab_guard_position: Position = Position::new(0, 0);
+    let mut map_width: usize = 0;
+    let mut map_height: usize = 0;
+
+    for (row_num, line) in contents.lines().enumerate() {
+        for (col_num, c) in line.chars().enumerate() {
+            if c == '#' {
+                lab_map.insert(Position {x: col_num as i32, y: row_num as i32});
+            } else if c == '^' {
+                lab_guard_position = Position {x: col_num as i32, y: row_num as i32};
+            }
+
+            if col_num > map_width {
+                map_width = col_num;
+            }
+        }
+
+        if map_width > map_height {
+            map_height = map_width;
+        }
+    }
+
+    let mut direction_offset: Position = Position::new(0, -1);
+    visited_squares.insert(lab_guard_position);
+    while lab_guard_position.x >= 0 && lab_guard_position.y >= 0 && 
+          lab_guard_position.x <= map_width as i32 && lab_guard_position.y <= map_height as i32 {
+            
+            let new_lab_guard_position: Position = Position {
+                x: lab_guard_position.x + direction_offset.x , 
+                y: lab_guard_position.y + direction_offset.y
+            };
+
+            // check if the lab_guard_position's next position is #
+            if lab_map.contains(&new_lab_guard_position) {
+                // we hit an obstacle, turn right
+                direction_offset = day06_turn_right(direction_offset);
+            } else {
+                // move forward
+                lab_guard_position = new_lab_guard_position;
+                
+                if !visited_squares.contains(&lab_guard_position) {
+                    visited_squares.insert(lab_guard_position);
+                    answer += 1;
+                }
+            }
+    }
+
+    return format!("{}", answer);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d06_part2(contents: String) -> String {
+    let mut answer: u64 = 0;
+    let mut lab_map: HashSet<Position> = HashSet::new();
+    let mut lab_guard_position: Position = Position::new(0, 0);
+    let mut map_width: usize = 0;
+    let mut map_height: usize = 0;
+
+    for (row_num, line) in contents.lines().enumerate() {
+        for (col_num, c) in line.chars().enumerate() {
+            if c == '#' {
+                lab_map.insert(Position {x: col_num as i32, y: row_num as i32});
+            } else if c == '^' {
+                lab_guard_position = Position {x: col_num as i32, y: row_num as i32};
+            }
+
+            if col_num > map_width {
+                map_width = col_num;
+            }
+        }
+
+        if map_width > map_height {
+            map_height = map_width;
+        }
+    }
+
+    let mut direction_offset: Position;
+    let lab_guard_init: Position = lab_guard_position;
+    for x in 0..(map_width+1) {
+        for y in 0..(map_height+1) {
+            let new_ob: Position = Position::new(x as i32, y as i32);
+            if !lab_map.contains(&new_ob) && lab_guard_init != new_ob {
+
+                // reset lab gaurd position and direction offset
+                lab_guard_position = lab_guard_init;
+                direction_offset = Position::new(0, -1);
+
+                // make a copy with new object and use that instead
+                let mut lab_map_copy: HashSet<Position> = lab_map.clone();
+                lab_map_copy.insert(new_ob);
+
+                let mut loop_count: usize = 0;
+                while lab_guard_position.x >= 0 && lab_guard_position.y >= 0 && 
+                        lab_guard_position.x <= map_width as i32 && lab_guard_position.y <= map_height as i32 {
+                    
+                    let new_lab_guard_position: Position = Position {
+                        x: lab_guard_position.x + direction_offset.x , 
+                        y: lab_guard_position.y + direction_offset.y
+                    };
+
+                    // check if the lab_guard_position's next position is #
+                    if lab_map_copy.contains(&new_lab_guard_position) {
+                        // we hit an obstacle, turn right
+                        direction_offset = day06_turn_right(direction_offset);
+                    } else {
+                        // move forward
+                        lab_guard_position = new_lab_guard_position;
+                    }
+
+                    if loop_count >= 8000 {
+                        // in a loop
+                        answer += 1;
+                        break;
+                    }
+
+                    loop_count = loop_count.saturating_add(1);
+                }
+            }
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d07_part1(contents: String) -> String {
+    let mut answer: u64 = 0;
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        let total: u64 = line.split(':')
+            .nth(0).unwrap()
+            .parse::<u64>().unwrap();
+        let coefficients: Vec<u64> = line.to_string()
+            .split(':')
+            .nth(1).unwrap()
+            .split_ascii_whitespace()
+            .map(|x: &str| x.parse::<u64>().unwrap())
+            .collect();
+
+
+        let mut loop_count: u64 = 0;
+        while loop_count < (1 << coefficients.len()) {
+            let mut current_evaluation: u64 = coefficients[0];
+            for i in 1..coefficients.len() {
+                // check each bit in loop count to see if we should add or multiply
+                if ((1 << i) & loop_count) == 0 {
+                    // 0b0 is an add
+                    current_evaluation += coefficients[i];
+                } else {
+                    // 0b1 is a multiply
+                    current_evaluation *= coefficients[i];
+                }
+            }
+
+            if current_evaluation == total {
+                answer += total;
+                break;
+            }
+
+            loop_count = loop_count.saturating_add(1);
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+fn day07_concat(a: u64, b: u64) -> u64 { 
+    return a as u64 * 10u64.pow(b.ilog10() + 1) + b as u64;
+}
+
+#[allow(non_snake_case)]
+pub fn d07_part2(contents: String) -> String {
+    let mut answer: u64 = 0;
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        let total: u64 = line.split(':')
+            .nth(0).unwrap()
+            .parse::<u64>().unwrap();
+        let coefficients: Vec<u64> = line.to_string()
+            .split(':')
+            .nth(1).unwrap()
+            .split_ascii_whitespace()
+            .map(|x: &str| x.parse::<u64>().unwrap())
+            .collect();
+
+        // (number of values to select).map(|| range of values to select from).generate permutations with repition
+        for perm in (0..coefficients.len()-1).map(|_| 0..3).multi_cartesian_product() {
+            let mut current_evaluation: u64 = coefficients[0];
+            for (n, p) in perm.iter().enumerate() {
+                // check each bit in loop count to see if we should add or multiply
+                if *p == 0 {
+                    // remainder of 0 is add
+                    current_evaluation += coefficients[n+1];
+                } else if *p == 1 {
+                    // remainder of 1 is multiply
+                    current_evaluation *= coefficients[n+1];
+                } else {
+                    // remainder of 2 is concatenate
+                    current_evaluation = day07_concat(current_evaluation, coefficients[n+1]);
+                }
+
+                if current_evaluation > total {
+                    break;
+                }
+            }
+
+            if current_evaluation == total {
+                answer += total;
+                break;
+            }
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+#[allow(non_snake_case)]
+pub fn d08_part1(contents: String) -> String {
+    let mut answer: u64 = 0;
+    let mut antennas: HashMap<char, Vec<Position>> = HashMap::new();
+    let mut raw_antennas: HashSet<Position> = HashSet::new();
+    let mut map_width: u64 = 0;
+    let mut map_height: u64 = 0;
+    let mut antinodes: HashMap<char, Vec<Position>> = HashMap::new();
+
+    for (row_num, line) in contents.lines().enumerate() {
+        for (col_num, c) in line.chars().enumerate() {
+            if c != '.' {
+                // found antenna, add to the map
+                let new_antenna: Position = Position::new( col_num as i32, row_num as i32);
+                match antennas.get_mut(&c) {
+                    Some(v) => {
+                        v.push(new_antenna);
+                    }
+                    None => {
+                        antennas.insert(c, vec![new_antenna]);
+                    }
+                }
+
+                if !raw_antennas.contains(&new_antenna) {
+                    raw_antennas.insert(new_antenna);
+                }
+            }
+
+            if col_num as u64 > map_width {
+                map_width = col_num as u64;
+            }
+        }
+
+        if row_num as u64 > map_height {
+            map_height = row_num as u64;
+        }
+    }
+
+    // loop through each antenna type
+    for (frequency, antenna_locs) in antennas.iter() {
+        // (number of values to select).map(|| range of values to select from).generate permutations with repition
+        for perm in (0..antenna_locs.len()).permutations(2) {
+            let dx = antenna_locs[perm[0]].x - antenna_locs[perm[1]].x;
+            let dy = antenna_locs[perm[0]].y - antenna_locs[perm[1]].y;
+
+            let new_antinodes: [Position; 2] = [
+                Position::new(antenna_locs[perm[0]].x + dx, antenna_locs[perm[0]].y + dy),
+                Position::new(antenna_locs[perm[1]].x - dx, antenna_locs[perm[1]].y - dy)
+            ];
+
+            for antinode in new_antinodes {
+                if ((antinodes.contains_key(&frequency) && !antinodes.get(frequency).unwrap().contains(&antinode)) || !antinodes.contains_key(&frequency)) && 
+                        antinode.x <= map_width as i32 && antinode.y <= map_height as i32 && 
+                        antinode.x >= 0 && antinode.y >= 0 {
+                    // not already an antinode fo rthat frequency, not an antenna, and inside the map
+                    // add to antinodes
+                    match antinodes.get_mut(&frequency) {
+                        Some(v) => {
+                            v.push(antinode);
+                        }
+                        None => {
+                            antinodes.insert(*frequency, vec![antinode]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // draw antinodes
+    for i in 0..=map_height {
+        for j in 0..=map_width {
+            for k in antinodes.keys() {
+                if antinodes[k].contains(&Position::new(j as i32, i as i32)) {
+                    answer += 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d08_part2(contents: String) -> String {
+    let mut answer: u64 = 0;
+    let mut antennas: HashMap<char, Vec<Position>> = HashMap::new();
+    let mut raw_antennas: HashSet<Position> = HashSet::new();
+    let mut map_width: u64 = 0;
+    let mut map_height: u64 = 0;
+    let mut antinodes: HashMap<char, Vec<Position>> = HashMap::new();
+
+    for (row_num, line) in contents.lines().enumerate() {
+        for (col_num, c) in line.chars().enumerate() {
+            if c != '.' {
+                // found antenna, add to the map
+                let new_antenna: Position = Position::new( col_num as i32, row_num as i32);
+                match antennas.get_mut(&c) {
+                    Some(v) => {
+                        v.push(new_antenna);
+                    }
+                    None => {
+                        antennas.insert(c, vec![new_antenna]);
+                    }
+                }
+
+                if !raw_antennas.contains(&new_antenna) {
+                    raw_antennas.insert(new_antenna);
+                }
+            }
+
+            if col_num as u64 > map_width {
+                map_width = col_num as u64;
+            }
+        }
+
+        if row_num as u64 > map_height {
+            map_height = row_num as u64;
+        }
+    }
+
+    // loop through each antenna type
+    for (frequency, antenna_locs) in antennas.iter() {
+        // (number of values to select).map(|| range of values to select from).generate permutations with repition
+        for perm in (0..antenna_locs.len()).permutations(2) {
+            let dx = antenna_locs[perm[0]].x - antenna_locs[perm[1]].x;
+            let dy = antenna_locs[perm[0]].y - antenna_locs[perm[1]].y;
+
+            for direction in [-1, 1] {
+                let mut antinode: Position = Position::new(antenna_locs[perm[0]].x + (direction*dx), antenna_locs[perm[0]].y + (direction*dy));
+
+                while antinode.x >= 0 && antinode.y >= 0 && antinode.x <= map_width as i32 && antinode.y <= map_height as i32 {
+                    if ((antinodes.contains_key(&frequency) && !antinodes.get(frequency).unwrap().contains(&antinode)) || !antinodes.contains_key(&frequency)) && 
+                            antinode.x <= map_width as i32 && antinode.y <= map_height as i32 && 
+                            antinode.x >= 0 && antinode.y >= 0 {
+                        // not already an antinode fo rthat frequency, not an antenna, and inside the map
+                        // add to antinodes
+                        match antinodes.get_mut(&frequency) {
+                            Some(v) => {
+                                v.push(antinode);
+                            }
+                            None => {
+                                antinodes.insert(*frequency, vec![antinode]);
+                            }
+                        }
+                    }
+
+                    // update antinode
+                    antinode.x += direction*dx;
+                    antinode.y += direction*dy;
+                }
+            }
+        }
+    }
+
+    // draw antinodes
+    for i in 0..=map_height {
+        for j in 0..=map_width {
+            for k in antinodes.keys() {
+                if antinodes[k].contains(&Position::new(j as i32, i as i32)) {
+                    answer += 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+#[allow(non_snake_case)]
+pub fn d09_part1(contents: String) -> String {
+    let mut answer: u64 = 0;
+
+    for (_line_num, line) in contents.lines().enumerate() {
+
+        // filesystem[value] = (starting_index, repeats)
+        let mut filesystem: Vec<(u64, u8)> = Vec::new();
+        let mut start_index: u64 = 0;
+
+        for (value, repeats) in line.chars().enumerate() {
+            let reps: u8 = repeats.to_digit(10).unwrap() as u8;
+
+            if (value & 0x01) == 0x00 {
+                // only save even value indices (odds are assumed to be empty space)
+                filesystem.push((start_index, reps));
+            }
+
+            // get the next starting index
+            start_index = start_index + reps as u64;
+        }
+
+        let mut head_index: u64 = 0;
+        let mut tail_index: u64 = (filesystem.len()-1) as u64;
+        let mut compact_filesystem: Vec<u64> = Vec::new();
+        while head_index < tail_index {
+            let (start_index, repetitions) = filesystem[head_index as usize];
+            let empty_space_start: u64 = start_index + repetitions  as u64;
+            let empty_space_end: u64 = filesystem[(head_index + 1) as usize].0;
+
+            // add the unmoved bytes
+            for _ in start_index..start_index+repetitions as u64 {
+                compact_filesystem.push(head_index);
+            }
+            
+            // add the moved bytes into the compact file system
+            let mut i: u64 = 0;
+            while i < (empty_space_end - empty_space_start) {
+                if filesystem[tail_index as usize].1 == 0 {
+                    // no more repetitions
+                    // remove the last index from filesystem and decrement tail_index
+                    // and add the next value
+                    _ = filesystem.pop();
+                    tail_index -= 1;
+                }
+
+                compact_filesystem.push(tail_index);
+
+                if filesystem[tail_index as usize].1 > 0 {
+                    // decrement the repetitions of the value
+                    filesystem[tail_index as usize].1 -= 1;
+                    i += 1;
+                }
+
+                if filesystem[tail_index as usize].1 == 0 {
+                    // no more repetitions
+                    // remove the last index from filesystem and decrement tail_index
+                    // and add the next value
+                    _ = filesystem.pop();
+                    tail_index -= 1;
+                }
+
+                if head_index >= tail_index {
+                    break;
+                }
+            }
+
+            head_index = head_index.saturating_add(1);
+        }
+
+        // append any remaining repetitions from head_index to compact_filesystem
+        if head_index as usize <= filesystem.len() - 1 && 
+                filesystem[head_index as usize].1 > 0 {
+            for _ in 0..filesystem[head_index as usize].1 {
+                compact_filesystem.push(head_index);
+            }
+        }
+
+        for (i, val) in compact_filesystem.into_iter().enumerate() {
+            answer += (i as u64)*val;
+        }
+
+        break;
+    }
+
+    return format!("{}", answer);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d09_part2(contents: String) -> String {
+    let mut answer: u64 = 0;
+
+    for (_line_num, line) in contents.lines().enumerate() {
+
+        // filesystem[idx] = (starting_index, repeats, value)
+        let mut filesystem: Vec<(u64, u8, u64)> = Vec::new();
+        let mut start_index: u64 = 0;
+        let mut file_contents: u64 = 0;
+        for (value, repeats) in line.chars().enumerate() {
+            let reps: u8 = repeats.to_digit(10).unwrap() as u8;
+
+            if (value & 0x01) == 0x00 {
+                // only save even value indices (odds are assumed to be empty space)
+                filesystem.push((start_index, reps, file_contents));
+                file_contents += 1;
+            }
+
+            // get the next starting index
+            start_index = start_index + reps as u64;
+        }
+
+        let mut tail_index: u64 = (filesystem.len()-1) as u64;
+        while tail_index > 0 {
+            let mut early_exit: bool = false;
+            let mut head_index: u64 = 0;
+            while head_index < tail_index {
+                let (start_index, repetitions, _) = filesystem[head_index as usize];
+                let empty_space_start: u64 = start_index + repetitions  as u64;
+                let empty_space_end: u64 = filesystem[(head_index + 1) as usize].0;
+                let remaining_size: u64 = empty_space_end - empty_space_start;
+
+                // try to fit the tail into the front most empty spot
+                if filesystem[tail_index as usize].1 as u64 <= remaining_size {
+                    // pop the last value off as it's no longer at the end
+                    let mut back_spot: (u64, u8, u64) = filesystem.remove(tail_index as usize);
+
+                    // update the new starting location
+                    back_spot.0 = empty_space_start;
+
+                    // move it to this spot and then stop trying to find a new spot for the file
+                    filesystem.insert((head_index + 1) as usize, back_spot);
+                    early_exit = true;
+                    break;
+                }
+
+                // try the next empty spot
+                head_index += 1;
+            }
+
+            if early_exit == false {
+                // there is no room for the tail file, leave the file where it is
+                tail_index -= 1;
+            }
+        }
+
+
+        for (starting_index, length, file_contents) in filesystem.into_iter() {
+            for j in 0..length {
+                answer += (starting_index + j as u64)*(file_contents as u64);
+            }
+        }
+
+        break;
+    }
+
+    return format!("{}", answer);
+}
+
+#[allow(non_snake_case)]
+fn day10_optimized_dijkstras_search(  weighted_map: &Vec<Vec<u8>>, start: Position, 
+                                    goal: Position ) -> Vec<Position> {
+    let mapWidth: usize = weighted_map[0].len();
+    let mapHeight: usize = weighted_map.len();
+
+    let mut path: Vec<Position> = Vec::with_capacity(1 as usize);
+    if start.x < 0 || start.y < 0 || goal.x >= mapWidth as i32 || goal.y >= mapHeight as i32 ||
+       start == goal || mapWidth < 2 || mapHeight < 2 {
+        return path;
+    }
+
+    /* Memory allocation */
+    let mut close_set: HashSet<Position, PositionBuildHasher> = HashSet::with_capacity_and_hasher(mapHeight * mapWidth, PositionBuildHasher);
+    let mut came_from: HashMap<Position, Position, PositionBuildHasher> = HashMap::with_capacity_and_hasher(mapHeight * mapWidth, PositionBuildHasher);
+    let mut gscore: HashMap<Position, f32, PositionBuildHasher> = HashMap::with_capacity_and_hasher(mapHeight * mapWidth, PositionBuildHasher);
+    let mut oheap: PriorityQueue<Position, OrderedFloat<f32>, PositionBuildHasher> = PriorityQueue::with_capacity_and_hasher(mapWidth + mapHeight, PositionBuildHasher);
+    let mut oheap_copy: HashMap<Position, f32, PositionBuildHasher> = HashMap::with_capacity_and_hasher(mapHeight * mapWidth, PositionBuildHasher);
+
+    let mut current: Position;
+    let mut neighbors: [Position; 4];
+
+    /* Add initial position to the search list */
+    gscore.insert(start, 0.0);
+
+    /* Note: gscore is multiplied by -1 before being entered into the oheap
+     *  because of how big of a pain in the ass it is to switch it from a
+     *  max heap to a min heap */
+    oheap.push(start, OrderedFloat::from(-1.0*(*gscore.get(&start).unwrap_or(&0.0))));
+    oheap_copy.insert(start, *gscore.get(&start).unwrap_or(&0.0));
+
+    let mut _count: u32 = 0;
+    while !oheap.is_empty() {
+        _count += 1;
+        (current, _) = oheap.pop().unwrap_or((Position::new(0,0), OrderedFloat::from(0.0)));
+        oheap_copy.remove(&current);
+        close_set.insert(current);
+
+        neighbors = current.get_surrounding_positions();
+
+        /* Search surrounding neighbors */
+        for neighbor in neighbors {
+            /* if the neighbor is a valid position */
+            if neighbor.x >= 0 && neighbor.y >= 0 && 
+                    neighbor.y < mapHeight as i32 && neighbor.x < mapWidth as i32 &&
+                    weighted_map[neighbor.y as usize][neighbor.x as usize] == weighted_map[current.y as usize][current.x as usize].saturating_add(1) {
+                let neighbor_gscore: f32 = *gscore.get(&current).unwrap_or(&0.0) + weighted_map[neighbor.y as usize][neighbor.x as usize] as f32 + 
+                                            day10_optimized_heuristic(neighbor, current);
+
+                /* if the neighbor is already on the open list check to see if the neighbor is better before updating it*/
+                let in_open_list: bool = oheap_copy.contains_key(&neighbor);
+                if in_open_list && neighbor_gscore < *gscore.get(&neighbor).unwrap_or(&0.0){
+                    /* track the node's parent */
+                    came_from.insert(neighbor, current);
+
+                    /* gscore = cost to get from the start to the current position */
+                    gscore.entry(neighbor).and_modify(|val| *val = neighbor_gscore);
+
+                    /* update the neighbors values */
+                    oheap_copy.entry(neighbor).and_modify(|val| *val = neighbor_gscore);
+
+                    /* remove the old gscore */
+                    oheap.remove(&neighbor);
+
+                    /* Add the new fscore and sort */
+                    oheap.push(neighbor, OrderedFloat::from(-1.0*neighbor_gscore));
+                    continue;
+                }
+
+                /* check if it is on the closed list */
+                if close_set.contains(&neighbor) && neighbor_gscore < *gscore.get(&neighbor).unwrap_or(&0.0) {
+                    /* remove neighbor from closed list */
+                    close_set.remove(&neighbor);
+                }
+
+                /* Add to the open list */
+                if !close_set.contains(&neighbor) && !in_open_list {
+                    /* track the node's parent */
+                    came_from.insert(neighbor, current);
+
+                    /* gscore = cost to get rom the start to the current position */
+                    gscore.insert(neighbor, neighbor_gscore);
+
+                    /* add to the open list */
+                    oheap_copy.insert(neighbor, neighbor_gscore);
+                    oheap.push(neighbor, OrderedFloat::from(-1.0*neighbor_gscore));
+                }
+            }
+        }
+    }
+
+    /* trace path back from the goal */
+    current = goal;
+    while current != start {
+        path.push(current);
+        match came_from.get(&current) {
+            Some(x) => {
+                current = *x;
+            } None => {
+                break;
+            }
+        }
+    }
+
+    path.reverse();
+
+
+    return path;
+}
+
+
+#[inline]
+fn day10_optimized_heuristic(a: Position, b: Position) -> f32 {
+    return (((a.x - b.x) + (a.y - b.y)) as f32).abs();
+}
+
+#[allow(non_snake_case)]
+pub fn d10_part1(contents: String) -> String {
+    let mut answer: u64 = 0;
+    let mut maze: Vec<Vec<u8>> = Vec::new();
+    let mut start_positions: Vec<Position> = Vec::new();
+    let mut end_positions: Vec<Position> = Vec::new();
+
+    for (row_num, line) in contents.lines().enumerate() {
+        let mut row: Vec<u8> = Vec::new();
+        for (col_num, c) in line.chars().enumerate() {
+            if c == '0' {
+                start_positions.push(Position::new(col_num as i32, row_num as i32));
+            } else if c == '9' {
+                end_positions.push(Position::new(col_num as i32, row_num as i32));
+            }
+
+            row.push(c.to_digit(10).unwrap() as u8);
+        }
+        maze.push(row);
+    }
+
+    for start in start_positions {
+        for end in end_positions.clone() {
+            let path: Vec<Position> = day10_optimized_dijkstras_search(&maze, start, end);
+
+            if path.len() == 9 {
+                answer += 1;
+            }
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+#[allow(non_snake_case)]
+fn day10_depth_first_search(weighted_map: &Vec<Vec<u8>>, start: Position, count: &mut u64) {
+    let mapWidth: usize = weighted_map[0].len();
+    let mapHeight: usize = weighted_map.len();
+
+    if start.x < 0 || start.y < 0 || mapWidth < 2 || mapHeight < 2 {
+        return;
+    }
+
+    for neighbor in start.get_surrounding_positions() {
+        // if the neighbor is a valid position
+        if neighbor.x >= 0 && neighbor.y >= 0 && 
+                neighbor.y < mapHeight as i32 && neighbor.x < mapWidth as i32 &&
+                weighted_map[neighbor.y as usize][neighbor.x as usize] == weighted_map[start.y as usize][start.x as usize].saturating_add(1) {
+            
+            if weighted_map[neighbor.y as usize][neighbor.x as usize] == 9 {
+                *count += 1;
+            } else {
+                day10_depth_first_search(weighted_map, neighbor, count);
+            }
+        }
+    }
+
+    return;
+}
+
+#[allow(non_snake_case)]
+pub fn d10_part2(contents: String) -> String {
+    let mut answer: u64 = 0;
+    let mut maze: Vec<Vec<u8>> = Vec::new();
+    let mut start_positions: Vec<Position> = Vec::new();
+
+    for (row_num, line) in contents.lines().enumerate() {
+        let mut row: Vec<u8> = Vec::new();
+        for (col_num, c) in line.chars().enumerate() {
+            if c == '0' {
+                start_positions.push(Position::new(col_num as i32, row_num as i32));
+            }
+
+            row.push(c.to_digit(10).unwrap() as u8);
+        }
+        maze.push(row);
+    }
+
+    for start in start_positions {
+        day10_depth_first_search(&maze, start, &mut answer);
+    }
+
+    return format!("{}", answer);
+}
+
+#[allow(non_snake_case)]
+pub fn d11_part1(contents: String) -> String {
+    let mut arrangement: Vec<u64> = Vec::new();
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        arrangement = line.split_ascii_whitespace().map(|x| x.parse::<u64>().unwrap()).collect();
+    }
+
+    for _ in 0..25 {
+        let mut new_arrangement: Vec<u64> = Vec::new();
+        for j in 0..arrangement.len() {
+            if arrangement[j] == 0 {
+                new_arrangement.push(1);
+            } else if arrangement[j].to_string().len() & 0x01 == 0x00 {
+                // even number of digits
+                let num_as_str: String = arrangement[j].to_string();
+                let num_digits: usize = num_as_str.len() >> 1;
+                let left: u64 = num_as_str[..num_digits].parse::<u64>().unwrap();
+                let right: u64 = num_as_str[num_digits..].parse::<u64>().unwrap();
+                new_arrangement.push(left);
+                new_arrangement.push(right);
+            } else {
+                new_arrangement.push(arrangement[j] * 2024);
+            }
+        }
+
+        arrangement = new_arrangement;
+    }
+
+    return format!("{}", arrangement.len());
+}
+
+
+fn day11_get_num_digits(mut num: u64) -> u64 {
+    let mut num_digits: u64 = 1;
+    while (num / 10) > 0 {
+        num_digits += 1;
+        num /= 10;
+    }
+    return num_digits;
+}
+
+fn day11_split_digits(mut num: u64, num_digits: u64) -> (u64, u64) {
+    let mut left: u64 = 0;
+    let mut right: u64 = 0;
+    let half_point: u64  = num_digits >> 1;
+
+    let mut right_count: u64 = 0;
+    let mut left_count: u64 = 0;
+    for i in 0..num_digits {
+        if i < half_point {
+            right += (num % 10) * (10 as u64).pow(right_count as u32);
+            right_count += 1;
+        } else {
+            left += (num % 10) * (10 as u64).pow(left_count as u32);
+            left_count += 1;
+        }
+        num /= 10;
+    }
+
+    return (left, right);
+}
+
+#[allow(non_snake_case)]
+pub fn d11_part2(contents: String) -> String {
+    let mut answer: u64 = 0;
+    let mut arrangement: HashMap<u64, u64> = HashMap::new();
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        for num in line.split_ascii_whitespace() {
+            let digit: u64 = num.parse::<u64>().unwrap();
+
+            match arrangement.get_mut(&digit) {
+                Some(x) => {
+                    *x += 1;
+                } None => {
+                    arrangement.insert(digit, 1);
+                }
+            }
+        }
+    }
+
+    for _ in 0..75 {
+        let mut new_arrangement: HashMap<u64, u64> = HashMap::new();
+        for (digit, count) in arrangement.iter() {
+            if *digit == 0 {
+                // CONVERT to a 1
+                let new_digit: u64 = 1;
+                match new_arrangement.get_mut(&new_digit) {
+                    Some(x) => {
+                        // increment the current count, if the digit is already in the hashmap
+                        *x += *count;
+                    } None => {
+                        // if not in the hashmap, add it with the current count
+                        new_arrangement.insert(new_digit, *count);
+                    }
+                }
+            } else if day11_get_num_digits(*digit) & 0x01 == 0x00 {
+                // even number of digits
+                let num_digits: u64 = day11_get_num_digits(*digit);
+                let (left, right): (u64, u64) = day11_split_digits(*digit, num_digits);
+
+                for d in [left, right] {
+                    match new_arrangement.get_mut(&d) {
+                        Some(x) => {
+                            // increment the current count, if the digit is already in the hashmap
+                            *x += *count;
+                        } None => {
+                            // if not in the hashmap, add it with the current count
+                            new_arrangement.insert(d, *count);
+                        }
+                    }
+                }
+            } else {
+                // mutliply by 2024
+                let new_digit: u64 = digit * 2024;
+                match new_arrangement.get_mut(&new_digit) {
+                    Some(x) => {
+                        // increment the current count, if the digit is already in the hashmap
+                        *x += *count;
+                    } None => {
+                        // if not in the hashmap, add it with the current count
+                        new_arrangement.insert(new_digit, *count);
+                    }
+                }
+            }
+        }
+
+        // overwrite the old arrangement with the newly constructed one
+        arrangement = new_arrangement;
+    }
+
+    for (_digit, count) in arrangement.iter() {
+        answer += count;
+    }
+
+    return format!("{}", answer);
+}
+
+#[allow(non_camel_case_types)]
+struct day12_GardenPlot {
+    perimeter: u64,
+    locations: HashSet<Position, PositionBuildHasher>,
+}
+
+impl day12_GardenPlot {
+    fn new(p: u64, l: HashSet<Position, PositionBuildHasher>) -> Self {
+        Self {perimeter: p, locations: l}
+    }
+}
+
+#[allow(non_snake_case)]
+fn day12_BreadthFirstSearch(map: &Vec<Vec<char>>, start: Position, garden: &mut HashMap<char, Vec<day12_GardenPlot>>, plant: char) {
+    let map_height: u64 = map.len() as u64;
+    let map_width: u64 = map.first().unwrap().len() as u64;
+
+    let mut open: VecDeque<Position> = VecDeque::new();
+    let mut closed: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+
+    // add a new plot
+    match garden.get_mut(&plant) {
+        Some(x) => {
+            // push a new garden plot
+            let new_locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+            let new_plot: day12_GardenPlot = day12_GardenPlot::new(0, new_locations);
+            x.push(new_plot);
+        } None => {
+            // insert the first garden plot
+            let new_locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+            let new_plot: day12_GardenPlot = day12_GardenPlot::new(0, new_locations);
+            garden.insert(plant, vec![new_plot]);
+        }
+    }
+
+    open.push_back(start);
+    while !open.is_empty() {
+        let current: Position = open.pop_front().unwrap();
+        closed.insert(current);
+
+        match garden.get_mut(&plant) {
+            Some(x) => {
+                // increment area and add to the locations
+                x.last_mut().unwrap().locations.insert(current);
+            } None => {
+                // should never be reached, but insert just in case
+                let mut locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+                locations.insert(current);
+                garden.insert(plant, vec![day12_GardenPlot::new(0, locations)]);
+            }
+        }
+
+        for neighbor in current.get_surrounding_positions() {
+            if !closed.contains(&neighbor) {
+                if neighbor.x >= 0 && neighbor.y >= 0 && neighbor.x < map_width as i32 && neighbor.y < map_height as i32 && 
+                        map[neighbor.y as usize][neighbor.x as usize] == plant {
+
+                    if !open.contains(&neighbor) {
+                        open.push_back(neighbor);
+                    }
+
+                } else {
+                    // perimeter reached
+                    match garden.get_mut(&plant) {
+                        Some(x) => {
+                            // increment perimeter
+                            x.last_mut().unwrap().perimeter += 1;
+                        } None => {
+                            // should never be reached, but insert just in case
+                            let mut locations: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+                            locations.insert(neighbor);
+                            garden.insert(plant, vec![day12_GardenPlot::new(1, locations)]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+#[allow(non_snake_case)]
+pub fn d12_part1(contents: String) -> String {
+    let mut garden: HashMap<char, Vec<day12_GardenPlot>> = HashMap::new();
+    let mut map: Vec<Vec<char>> = Vec::new();
+
+    // build map
+    for (_col_num, line) in contents.lines().enumerate() {
+        let mut garden_row: Vec<char> = Vec::new();
+        for (_row_num, c) in line.chars().enumerate() {
+            garden_row.push(c);
+
+            if !garden.contains_key(&c) {
+                let l: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+                garden.insert(c, vec![day12_GardenPlot::new(0, l)]);
+            }
+        }
+
+        map.push(garden_row);
+    }
+
+    // loop through the map and find all plots
+    for (row_num, row) in map.iter().enumerate() {
+        for (col_num, plant) in row.iter().enumerate() {
+            let plant_loc: Position = Position::new(col_num as i32, row_num as i32);
+            let plots: Option<&Vec<day12_GardenPlot>> = garden.get(plant);
+
+            // this plant species has not been discovered or this specific location has not been visited yet
+            if plots.is_none() {
+                day12_BreadthFirstSearch(&map, plant_loc, &mut garden, *plant);
+            } else {
+                // is_some
+                let mut found_location = false;
+                for plot in plots.unwrap() {
+                    if plot.locations.contains(&plant_loc) {
+                        found_location = true;
+                        break;
+                    }
+                }
+
+                if !found_location {
+                    // 'A' region exists, but this specific location within the 'A' has not been found
+                    day12_BreadthFirstSearch(&map, plant_loc, &mut garden, *plant);
+                }
+            }
+        }
+    }
+
+    let mut answer: u64 = 0;
+    for (_, plots) in garden.iter() {
+        for plot in plots {
+            answer += plot.locations.len() as u64 * plot.perimeter;
+        }
+    }
+    return format!("{}", answer);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d12_part2(contents: String) -> String {
+    let mut garden: HashMap<char, Vec<day12_GardenPlot>> = HashMap::new();
+    let mut map: Vec<Vec<char>> = Vec::new();
+
+    // build map
+    for (_col_num, line) in contents.lines().enumerate() {
+        let mut garden_row: Vec<char> = Vec::new();
+        for (_row_num, c) in line.chars().enumerate() {
+            garden_row.push(c);
+
+            if !garden.contains_key(&c) {
+                let l: HashSet<Position, PositionBuildHasher> = HashSet::with_hasher(PositionBuildHasher);
+                garden.insert(c, vec![day12_GardenPlot::new(0, l)]);
+            }
+        }
+
+        map.push(garden_row);
+    }
+
+    // loop through the map and find all plots
+    for (row_num, row) in map.iter().enumerate() {
+        for (col_num, plant) in row.iter().enumerate() {
+            let plant_loc: Position = Position::new(col_num as i32, row_num as i32);
+            let plots: Option<&Vec<day12_GardenPlot>> = garden.get(plant);
+
+            // this plant species has not been discovered or this specific location has not been visited yet
+            if plots.is_none() {
+                day12_BreadthFirstSearch(&map, plant_loc, &mut garden, *plant);
+            } else {
+                // is_some
+                let mut found_location = false;
+                for plot in plots.unwrap() {
+                    if plot.locations.contains(&plant_loc) {
+                        found_location = true;
+                        break;
+                    }
+                }
+
+                if !found_location {
+                    // 'A' region exists, but this specific location within the 'A' has not been found
+                    day12_BreadthFirstSearch(&map, plant_loc, &mut garden, *plant);
+                }
+            }
+        }
+    }
+
+    let mut answer: u64 = 0;
+    for (_, plots) in garden.iter() {
+        for plot in plots {
+            let mut sides: u64 = 0;
+            for p in plot.locations.iter() {
+                for (p1, p2) in [
+                            (Position::new(0, -1), Position::new(1, 0)), // north and east
+                            (Position::new(0,  1), Position::new(1, 0)), // south and east
+                            (Position::new(0,  1), Position::new(-1, 0)), // south and west
+                            (Position::new(0,  -1), Position::new(-1, 0)),] { // north and west
+                    let p1_mod: Position = p1 + *p;
+                    let p2_mod: Position = p2 + *p;
+                    let diag_mod: Position = p1 + p2 + *p;
+
+                    let mut same_count: u8 = 0;
+                    let mut different_count: u8 = 0;
+                    for p_mod in [p1_mod, p2_mod] {
+                        if p_mod.x < 0 || p_mod.y < 0 || p_mod.x >= map.first().unwrap().len() as i32 || p_mod.y >= map.len() as i32 ||
+                                map[p_mod.y as usize][p_mod.x as usize] != map[p.y as usize][p.x as usize] {
+                            // exterior corner
+                            different_count += 1;
+                        } else if p_mod.x >= 0 && p_mod.y >= 0 && p_mod.x < map.first().unwrap().len() as i32 && p_mod.y < map.len() as i32 &&
+                                diag_mod.x >= 0 && diag_mod.y >= 0 && diag_mod.x < map.first().unwrap().len() as i32 && diag_mod.y < map.len() as i32 &&
+                                map[p_mod.y as usize][p_mod.x as usize] == map[p.y as usize][p.x as usize] && 
+                                map[diag_mod.y as usize][diag_mod.x as usize] != map[p.y as usize][p.x as usize] {
+                            // interior corner
+                            same_count += 1;
+                        }
+                    }
+
+                    if same_count == 2 || different_count == 2 {
+                        sides += 1;
+                        //break;
+                    }
+                }
+            }
+
+            answer += sides * plot.locations.len() as u64;
+        }
+    }
+    return format!("{}", answer);
+}
+
+
+#[allow(non_snake_case)]
+pub fn d13_part1(contents: String) -> String {
+    const BUTTON_A_COST: f64 = 3.0;
+    const BUTTON_B_COST: f64 = 1.0;
+
+    let mut answer: u64 = 0;
+    let mut a_x: u64 = 0;
+    let mut a_y: u64 = 0;
+
+    let mut b_x: u64 = 0;
+    let mut b_y: u64 = 0;
+
+    let mut prize_x: u64 = 0;
+    let mut prize_y: u64 = 0;
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        if line.starts_with("Button A: ") {
+            let raw_equation: &str = line.strip_prefix("Button A: X+").unwrap();
+            a_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            a_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Button B: ") {
+            let raw_equation: &str = line.strip_prefix("Button B: X+").unwrap();
+            b_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            b_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Prize:") {
+            let raw_equation: &str = line.strip_prefix("Prize: X=").unwrap();
+            prize_x = raw_equation.split(',').nth(0).unwrap()
+                                    .parse::<u64>().unwrap();
+            prize_y = raw_equation.split(',').nth(1).unwrap()
+                                    .strip_prefix(" Y=").unwrap()
+                                    .parse::<u64>().unwrap();
+        } else {
+            // see how many buttons presses it takes to reach the target
+            // determine which is more efficient to optimize (a or b) by maximizing the button that has
+            // the biggest distance/ticket 
+            let a_distance: f64 = ((a_x*a_x + a_y*a_y) as f64).sqrt();
+            let b_distance: f64 = ((b_x*b_x + b_y*b_y) as f64).sqrt();
+            let maximize_b: bool = a_distance / BUTTON_A_COST <= b_distance / BUTTON_B_COST;
+            
+            let numaxpresses: f64 = prize_x as f64 / a_x as f64;
+            let numbxpresses: f64 = prize_x as f64 / b_x as f64;
+            let numaypresses: f64 = prize_y as f64 / a_y as f64;
+            let numbypresses: f64 = prize_y as f64 / b_y as f64;
+
+            // maximize either a or b in the below equations 
+            // depending on which give more distance / cost
+            // xposition = a_x * a + b_x * b
+            // yposition = a_y * a + b_y * b
+            // cost = a*3 + b*1
+            if maximize_b {
+                let maxbpresses: u64 = numbxpresses.min(numbypresses).floor() as u64;
+
+                let mut bpresses: u64 = maxbpresses;
+                loop {
+                    // solving for a in -> xposition = a_x * a + b_x * b
+                    let apresses: u64 = (prize_x.saturating_sub(bpresses * b_x)) / a_x as u64; 
+
+                    // now plug and chug to see if we actually hit the target
+                    if a_x*apresses + b_x*bpresses == prize_x && a_y*apresses + b_y*bpresses == prize_y {
+                        // found a winner, calculate the cost
+                        let cost: u64 = apresses*(BUTTON_A_COST as u64) + bpresses*(BUTTON_B_COST as u64);
+                        answer += cost;
+                        break;
+                    }
+
+                    if bpresses == 0 {
+                        break;
+                    } else {
+                        bpresses -= 1;
+                    }
+                }
+            } else {
+                let maxapresses: u64 = numaxpresses.min(numaypresses).floor() as u64;
+
+                let mut apresses: u64 = maxapresses;
+                loop {
+                    // solve for b in -> xposition = a_x * a + b_x * b
+                    let bpresses: u64 = (prize_x.saturating_sub(apresses * a_x)) / b_x as u64;
+
+                    // now plug and chug to see if we actually hit the target
+                    if a_x*apresses + b_x*bpresses == prize_x && a_y*apresses + b_y*bpresses == prize_y {
+                        // found a winner, calcualte the cost
+                        let cost: u64 = apresses*(BUTTON_A_COST as u64) + bpresses*(BUTTON_B_COST as u64);
+                        answer += cost;
+                    }
+
+                    if apresses == 0 {
+                        break;
+                    } else {
+                        apresses -= 1;
+                    }
+                }
+            }
+
+            // reset the variables
+            a_x = 0;
+            a_y = 0;
+            b_x = 0;
+            b_y = 0;
+            prize_x = 0;
+            prize_y = 0;
+        }
+    }
+
+    return format!("{}", answer);
+}
+
+
+
+#[allow(non_snake_case)]
+pub fn d13_part2(contents: String) -> String {
+    const BUTTON_A_COST: f64 = 3.0;
+    const BUTTON_B_COST: f64 = 1.0;
+
+    let mut answer: u64 = 0;
+    let mut a_x: u64 = 0;
+    let mut a_y: u64 = 0;
+
+    let mut b_x: u64 = 0;
+    let mut b_y: u64 = 0;
+
+    for (_line_num, line) in contents.lines().enumerate() {
+        if line.starts_with("Button A: ") {
+            let raw_equation: &str = line.strip_prefix("Button A: X+").unwrap();
+            a_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            a_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Button B: ") {
+            let raw_equation: &str = line.strip_prefix("Button B: X+").unwrap();
+            b_x = raw_equation.split(',').nth(0).unwrap()
+                                .parse::<u64>().unwrap();
+            b_y = raw_equation.split(',').nth(1).unwrap()
+                                .strip_prefix(" Y+").unwrap()
+                                .parse::<u64>().unwrap();
+        } else if line.starts_with("Prize:") {
+            let raw_equation: &str = line.strip_prefix("Prize: X=").unwrap();
+            let prize_x = raw_equation.split(',').nth(0).unwrap()
+                                    .parse::<u64>().unwrap() + 10_000_000_000_000;
+            let prize_y = raw_equation.split(',').nth(1).unwrap()
+                                    .strip_prefix(" Y=").unwrap()
+                                    .parse::<u64>().unwrap() + 10_000_000_000_000;
+
+            // a_x*apresses + b_x*bpresses == prize_x
+            // a_x*apresses = prize_x - (b_x * bpresses)
+            // apresses = (prize_x - (b_x * bpresses)) / a_x
+
+            // a_y*apresses + b_y*bpresses == prize_y
+            // a_y*((prize_x - (b_x * bpresses)) / a_x) + b_y*bpresses = prize_y
+            // a_y*prize_x/a_x - a_y*b_x*bpresses/a_x + b_y*bpresses = prize_y
+            // bpresses*(-1*a_y*b_x/a_x + b_y) = prize_y - a_y*prize_x/a_x
+            // bpresses = (prize_y - a_y*prize_x/a_x) / (-1*a_y*b_x/a_x + b_y)
+            // bpresses = (prize_y - a_y*prize_x/a_x) / (b_y - a_y*b_x/a_x)
+
+            let bpresses: u64 = ((prize_y as f64 - a_y as f64*prize_x as f64/a_x as f64) / 
+                                (b_y as f64 - a_y as f64*b_x as f64/a_x as f64)).round() as u64;
+            let apresses: u64 = ((prize_x as f64 - (b_x as f64 * bpresses as f64)) / a_x as f64).round() as u64;
+
+            // plug and chug to see if we actually hit the target
+            if //apresses >= 0 && bpresses >= 0 && 
+                    a_x*apresses as u64 + b_x*bpresses as u64 == prize_x && 
+                    a_y*apresses as u64 + b_y*bpresses as u64 == prize_y {
+                // found a winner, calculate the cost
+                let cost: u64 = (apresses as u64)*(BUTTON_A_COST as u64) + (bpresses as u64)*(BUTTON_B_COST as u64);
+                answer += cost;
+            }
+        }
+    }
+
+    return format!("{}", answer);
+}
