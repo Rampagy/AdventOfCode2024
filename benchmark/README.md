@@ -11,6 +11,7 @@ Runs all of my solutions for each problem and reports how long they took
     rustup 1.27.1 (54dd3d00f 2024-04-24)
     cargo 1.83.0 (5ffbef321 2024-10-29)
     ```
+1. Run `cargo clean` in a terminal from this folder (`benchmark/`)
 1. Run `cargo run --release` in a terminal from this folder (`benchmark/`)
 
 ## Results
