@@ -20,4 +20,8 @@ Cargo.lock
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# ignore all input.txt files
+**/input.txt
+
+# ignore all benchmark input files
 benchmark/**/*.txt
