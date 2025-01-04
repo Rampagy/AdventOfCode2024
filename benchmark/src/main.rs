@@ -4,11 +4,11 @@ mod position;
 use std::fs;
 use std::time::{Instant, Duration};
 
-const MICROSEC_ITERATIONS: u16 = 2000;
-const MILLISEC_ITERATIONS: u16 = 300;
-const CENTISEC_ITERATIONS: u16 = 40;
-const DECISEC_ITERATIONS:  u16 = 10;
-const SEC_ITERATIONS:      u16 = 3;
+const MICROSEC_ITERATIONS: u16 = 2000; // ~1 second @ 500 microseconds per iteration
+const MILLISEC_ITERATIONS: u16 = 200;// ~1 second @ 5 milliseconds per iteration
+const CENTISEC_ITERATIONS: u16 = 20; // ~1 second @ 5 centiseconds per iteration
+const DECISEC_ITERATIONS:  u16 = 6; // ~3 second @ 500 deciseconds per iteration
+const SEC_ITERATIONS:      u16 = 3; // minimum is at least 3 iterations
 
 #[allow(non_snake_case)]
 fn main() {
@@ -41,9 +41,26 @@ fn main() {
     println!("{}", run_bench("day14.txt", &aoc::d14_part1, "d14p1", MICROSEC_ITERATIONS));
     println!("{}", run_bench("day14.txt", &aoc::d14_part2, "d14p2", CENTISEC_ITERATIONS));
     println!("{}", run_bench("day15.txt", &aoc::d15_part1, "d15p1", MILLISEC_ITERATIONS));
-    println!("{}", run_bench("day15.txt", &aoc::d15_part2, "d15p2", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day15.txt", &aoc::d15_part2, "d15p2", DECISEC_ITERATIONS));
     println!("{}", run_bench("day16.txt", &aoc::d16_part1, "d16p1", MILLISEC_ITERATIONS));
     println!("{}", run_bench("day16.txt", &aoc::d16_part2, "d16p2", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day17.txt", &aoc::d17_part1, "d17p1", MICROSEC_ITERATIONS));
+    println!("{}", run_bench("day17.txt", &aoc::d17_part2, "d17p2", MICROSEC_ITERATIONS));
+    println!("{}", run_bench("day18.txt", &aoc::d18_part1, "d18p1", MILLISEC_ITERATIONS));
+    println!("{}", run_bench("day18.txt", &aoc::d18_part2, "d18p2", DECISEC_ITERATIONS));
+    println!("{}", run_bench("day19.txt", &aoc::d19_part1, "d19p1", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day19.txt", &aoc::d19_part2, "d19p2", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day20.txt", &aoc::d20_part1, "d20p1", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day20.txt", &aoc::d20_part2, "d20p2", CENTISEC_ITERATIONS));
+    println!("{}", run_bench("day21.txt", &aoc::d21_part1, "d21p1", MICROSEC_ITERATIONS));
+    println!("{}", run_bench("day21.txt", &aoc::d21_part2, "d21p2", MILLISEC_ITERATIONS));
+    println!("{}", run_bench("day22.txt", &aoc::d22_part1, "d22p1", MILLISEC_ITERATIONS));
+    println!("{}", run_bench("day22.txt", &aoc::d22_part2, "d22p2", SEC_ITERATIONS));
+    println!("{}", run_bench("day23.txt", &aoc::d23_part1, "d23p1", SEC_ITERATIONS));
+    println!("{}", run_bench("day23.txt", &aoc::d23_part2, "d23p2", DECISEC_ITERATIONS));
+    println!("{}", run_bench("day24.txt", &aoc::d24_part1, "d24p1", MICROSEC_ITERATIONS));
+    println!("{}", run_bench("day24.txt", &aoc::d24_part2, "d24p2", MILLISEC_ITERATIONS));
+    println!("{}", run_bench("day25.txt", &aoc::d25_part1, "d25p1", MICROSEC_ITERATIONS));
 }
 
 
