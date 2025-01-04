@@ -135,7 +135,7 @@ impl ops::Mul<Position> for Position {
     }
 }
 
-// overload the multiply operator
+// overload the divide operator
 impl ops::Div<Position> for Position {
     type Output = Position;
 
