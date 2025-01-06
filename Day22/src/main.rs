@@ -62,14 +62,13 @@ fn part1(contents: String) -> u64 {
 
 #[allow(non_snake_case)]
 fn part2(contents: String, iterations: usize) -> u64 {
-    let mut potential_changes: HashSet<Vec<i8>> = HashSet::new();
-    let mut buyer_sequence_price_maps: Vec<HashMap<Vec<i8>, u8>> = Vec::new();
+    let mut sequence_price_map: HashMap<Vec<i8>, Vec<u8>> = HashMap::new();
 
     for (_row_num, line) in contents.lines().enumerate() {
         let mut secret: u64 = line.parse::<u64>().unwrap();
         let mut prev_secret: u64 = secret;
         let mut delta_prices: Vec<i8> = Vec::new();
-        let mut sequence_price_map: HashMap<Vec<i8>, u8> = HashMap::new();
+        let mut potential_changes: HashSet<Vec<i8>> = HashSet::new();
 
         for i in 1..iterations {
             secret = calc_next_secret(secret);
@@ -78,37 +77,28 @@ fn part2(contents: String, iterations: usize) -> u64 {
             if i >= SEQUENCE_LENGTH {
                 // start populating potential_changes
                 let seq: Vec<i8> = delta_prices[(i-SEQUENCE_LENGTH)..].to_vec();
-                potential_changes.insert(seq.clone());
-                if !sequence_price_map.contains_key(&seq.clone()) {
-                    sequence_price_map.insert(seq.clone(), (secret%10) as u8);
+
+                // only add price to sequence_price_map if it's the first occurance of the sequence for this buyer
+                if !potential_changes.contains(&seq.clone()) {
+                    potential_changes.insert(seq.clone());
+                    let price: u8 = (secret%10) as u8;
+                    sequence_price_map.entry(seq.clone())
+                                        .and_modify(|x| x.push(price))
+                                        .or_insert(vec![price]);
                 }
             }
 
             prev_secret = secret;
         }
-
-        // store the sequence to price map
-        buyer_sequence_price_maps.push(sequence_price_map);
     }
 
     // loop through each potential_change on all of the buyers and see which one produces the most money
     let mut max_money: u64 = 0;
-    for potential in potential_changes {
-        let mut price_count: u64 = 0;
-        for (_buyer_idx, buyer_sequence_price_map) in buyer_sequence_price_maps.iter().enumerate() {
-            if let Some(price) = buyer_sequence_price_map.get(&potential) {
-                price_count += *price as u64;
-            }
+    for (_sequence, prices) in sequence_price_map.iter() {
+        let sequence_price: u64 = prices.iter().map(|x| *x as u64).sum();
 
-            if (price_count as usize + (buyer_sequence_price_maps.len().saturating_sub(_buyer_idx+1) * 9)) <= max_money as usize {
-                // if all the remaining indices were at max price it can't be greater than max_money
-                // therefore there is no point to continue searching this buyer or any of the rest
-                break;
-            }
-        }
-
-        if price_count > max_money {
-            max_money = price_count;
+        if sequence_price > max_money {
+            max_money = sequence_price;
         }
     }
 
