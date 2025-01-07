@@ -3720,7 +3720,6 @@ pub fn d22_part2(contents: String) -> String {
     const SEQUENCE_LENGTH: usize = 4;
 
     let mut sequence_price_map: HashMap<Vec<i8>, Vec<u8>> = HashMap::new();
-
     for (_row_num, line) in contents.lines().enumerate() {
         let mut secret: u64 = line.parse::<u64>().unwrap();
         let mut prev_secret: u64 = secret;

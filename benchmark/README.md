@@ -12,12 +12,10 @@ Runs all of my solutions for each problem and reports how long they took
     cargo 1.83.0 (5ffbef321 2024-10-29)
     ```
 1. Run `cargo clean` in a terminal 
-    1. From `benchmark/`
-1. Run `cargo run --release` (single threaded benchmark) or `cargo run --release -- --multi` (multi-threaded benchmark) in a terminal
-    1. From `benchmark/`
+    1. Run from terminal in this location: `benchmark/`
+1. Run `cargo run --release -- --both` for both a single threaded and multi threaded benchmark
+    1. Run from terminal in this location: `benchmark/`
 
 ## Results
 
 [AMD Threadripper 3970X results](3970X.md)
-
-[AMD Ryzen 7800X3D](7800X3D.md)
