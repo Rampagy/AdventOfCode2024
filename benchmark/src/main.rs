@@ -3,10 +3,10 @@ mod position;
 
 use std::env;
 use std::fs;
-//use std::thread;
-//use num_cpus;
+use threadpool::ThreadPool;
+use std::sync::{Arc, Mutex};
+use num_cpus;
 use std::time::{Instant, Duration};
-//use std::sync::{Arc, Mutex};
 
 
 const XLOW_MICROSEC_ITERATIONS: u32 = 200001; // ~1 second @ 50 microseconds per iteration
@@ -75,59 +75,56 @@ fn main() {
     ];
 
     let arg_contains_multi: bool = args.contains(&"--multi".to_string());
-    let arg_contains_both: bool = args.contains(&"--both".to_string());
+    let arg_contains_single: bool = args.contains(&"--single".to_string());
 
-    if arg_contains_multi || arg_contains_both {
-        /*
-        let (sender, receiver) = channel::unbounded();
-        let results = Arc::new(Mutex::new(Vec::new()));
-
-        for benchmark in benchmarks {
-            sender.send(benchmark).unwrap();
-        }
-
-        let mut children = Vec::new();
-        for _ in 0..num_cpus::get() {
-            let receiver = receiver.clone();
-            let results = Arc::clone(&results);
-            children.push(thread::spawn(move || {
-                while let Ok((file, func, label, iterations)) = receiver.recv() {
-                    let result = run_multi_bench(file, func, label, iterations);
-                    results.lock().unwrap().push(result);
-                }
-            }));
-        }
-
-        for child in children {
-            child.join().unwrap();
-        }
-
-        let mut results = Arc::try_unwrap(results).expect("Mutex still has multiple owners").into_inner().expect("Mutex cannot be locked");
-        results.sort();
-        for result in results {
-            println!("{}", result);
-        }
-        */
-        println!("TODO: multithreaded benchmark");
-    }
-
-    if arg_contains_both {
-        // print some blank spaces to seperate the results
-        println!("\n");
-    }
-
-    if arg_contains_both || !arg_contains_multi {
+    if arg_contains_multi || (!arg_contains_multi && !arg_contains_single) {
         let now: Instant = Instant::now();
         println!("{:^5} | {:^9} | {:^9} | {:^8}", "", "Iteration", "Total", "");
         println!("{:^5} | {:^9} | {:^9} | {:^8}", "Part", "time", "time", "Answer");
         println!("---------------------------------------------");
 
-        for (input_file, function, part, iterations) in benchmarks {
+        let pool: ThreadPool = ThreadPool::new(num_cpus::get());
+        let results: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::<String>::new()));
+
+        for (input_file, function, part, iterations) in benchmarks.clone() {
+            let results: Arc<Mutex<Vec<String>>> = Arc::clone(&results);
+            pool.execute(move || {
+                let result: String = run_bench(input_file, &function, part, iterations);
+                let mut tresults: std::sync::MutexGuard<'_, Vec<String>> = results.lock().unwrap();
+                tresults.push(result);
+            });
+        }
+
+        pool.join();
+
+        let mut results: Vec<String> = Arc::try_unwrap(results).expect("Lock still has multiple owners").into_inner().expect("Mutex cannot be locked");
+        results.sort();
+        for result in results {
+            println!("{}", result);
+        }
+
+
+        println!("----------------------------------------------------------------");
+        println!("threads: {}  {:>16.2?}", num_cpus::get(), now.elapsed());
+    }
+
+    if arg_contains_single == arg_contains_multi {
+        // print some blank spaces to seperate the results if running both
+        println!("\n");
+    }
+
+    if arg_contains_single || (!arg_contains_multi && !arg_contains_single) {
+        let now: Instant = Instant::now();
+        println!("{:^5} | {:^9} | {:^9} | {:^8}", "", "Iteration", "Total", "");
+        println!("{:^5} | {:^9} | {:^9} | {:^8}", "Part", "time", "time", "Answer");
+        println!("---------------------------------------------");
+
+        for (input_file, function, part, iterations) in benchmarks.clone() {
             println!("{}", run_bench(input_file, &function, part, iterations));
         }
 
         println!("----------------------------------------------------------------");
-        println!("{:>29.2?}", now.elapsed());
+        println!("threads: 1 {:>18.2?}", now.elapsed());
     }
 }
 

@@ -13,7 +13,7 @@ Runs all of my solutions for each problem and reports how long they took
     ```
 1. Run `cargo clean` in a terminal 
     1. Run from terminal in this location: `benchmark/`
-1. Run `cargo run --release -- --both` for both a single threaded and multi threaded benchmark
+1. Run `cargo run --release` for both a single threaded and multi threaded benchmark
     1. Run from terminal in this location: `benchmark/`
 
 ## Results
