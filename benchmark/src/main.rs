@@ -78,11 +78,11 @@ fn main() {
     let arg_contains_single: bool = args.contains(&"--single".to_string());
 
     if arg_contains_multi || (!arg_contains_multi && !arg_contains_single) {
-        let now: Instant = Instant::now();
-        println!("{:^5} | {:^9} | {:^9} | {:^8}", "", "Iteration", "Total", "");
-        println!("{:^5} | {:^9} | {:^9} | {:^8}", "Part", "time", "time", "Answer");
-        println!("---------------------------------------------");
+        println!("## Multi threaded results ({} threads)\n", num_cpus::get());
+        println!("| {:^5} | {:^14} | {:^10} | {:^40} |", "Part", "Iteration Time", "Total Time", "Answer");
+        println!("|-------|----------------|------------|------------------------------------------|");
 
+        let now: Instant = Instant::now();
         let pool: ThreadPool = ThreadPool::new(num_cpus::get());
         let results: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::<String>::new()));
 
@@ -103,9 +103,7 @@ fn main() {
             println!("{}", result);
         }
 
-
-        println!("----------------------------------------------------------------");
-        println!("threads: {}  {:>16.2?}", num_cpus::get(), now.elapsed());
+        println!("| Total |                | {:>10.2?} |                                          |", now.elapsed());
     }
 
     if arg_contains_single == arg_contains_multi {
@@ -114,17 +112,16 @@ fn main() {
     }
 
     if arg_contains_single || (!arg_contains_multi && !arg_contains_single) {
-        let now: Instant = Instant::now();
-        println!("{:^5} | {:^9} | {:^9} | {:^8}", "", "Iteration", "Total", "");
-        println!("{:^5} | {:^9} | {:^9} | {:^8}", "Part", "time", "time", "Answer");
-        println!("---------------------------------------------");
+        println!("## Single threaded results\n");
+        println!("| {:^5} | {:^14} | {:^10} | {:<40} |", "Part", "Iteration Time", "Total Time", "Answer");
+        println!("|-------|----------------|------------|------------------------------------------|");
 
+        let now: Instant = Instant::now();
         for (input_file, function, part, iterations) in benchmarks.clone() {
             println!("{}", run_bench(input_file, &function, part, iterations));
         }
 
-        println!("----------------------------------------------------------------");
-        println!("threads: 1 {:>18.2?}", now.elapsed());
+        println!("| Total |                | {:>10.2?} |                                          |", now.elapsed());
     }
 }
 
@@ -148,7 +145,7 @@ fn run_bench(input_file_name: &str, function: &dyn Fn(String) -> String, functio
         let total_time: Duration = mean_time;
         mean_time /= times.len() as u32;
 
-        return format!("{} | {:>9.2?} | {:>9.2?} | {}", function_name, mean_time, total_time, result);
+        return format!("| {:^5} | {:>14.2?} | {:>10.2?} | {:<40} |", function_name, mean_time, total_time, result);
     } else {
         // did not read text file properly
         return format!("{} | Unable to read the file {}", function_name, input_file_name);
