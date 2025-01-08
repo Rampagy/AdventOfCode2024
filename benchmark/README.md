@@ -19,3 +19,5 @@ Runs all of my solutions for each problem and reports how long they took
 ## Results
 
 [AMD Threadripper 3970X results](3970X.md)
+
+[AMD 7800X3D results](7800X3D.md)
