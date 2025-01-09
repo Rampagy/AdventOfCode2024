@@ -7,7 +7,7 @@ use threadpool::ThreadPool;
 use std::sync::{Arc, Mutex};
 use num_cpus;
 use std::time::{Instant, Duration};
-
+use std::collections::HashMap;
 
 const XLOW_MICROSEC_ITERATIONS: u32 = 200001; // ~1 second @ 50 microseconds per iteration
 const LOW_MICROSEC_ITERATIONS: u32 = 20001; // ~1 second @ 50 microseconds per iteration
@@ -16,6 +16,8 @@ const MILLISEC_ITERATIONS: u32 = 201;// ~1 second @ 5 milliseconds per iteration
 const CENTISEC_ITERATIONS: u32 = 21; // ~1 second @ 5 centiseconds per iteration
 const DECISEC_ITERATIONS:  u32 = 6; // ~3 second @ 500 deciseconds per iteration
 const SEC_ITERATIONS:      u32 = 1; // minimum is at least 3 iterations
+
+const MULTI_THREADED_ITERATIONS: usize = 5;
 
 
 #[allow(non_snake_case)]
@@ -84,22 +86,41 @@ fn main() {
 
         let now: Instant = Instant::now();
         let pool: ThreadPool = ThreadPool::new(num_cpus::get());
-        let results: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::<String>::new()));
+        let results: Arc<Mutex<HashMap<String, Vec<(Duration, Duration, String)>>>> = Arc::new(Mutex::new(HashMap::new()));
 
-        for (input_file, function, part, iterations) in benchmarks.clone() {
-            let results: Arc<Mutex<Vec<String>>> = Arc::clone(&results);
-            pool.execute(move || {
-                let result: String = run_bench(input_file, &function, part, iterations);
-                let mut tresults: std::sync::MutexGuard<'_, Vec<String>> = results.lock().unwrap();
-                tresults.push(result);
-            });
+        for _ in 0..MULTI_THREADED_ITERATIONS {
+            for (input_file, function, part, iterations) in benchmarks.clone() {
+                let results: Arc<Mutex<HashMap<String, Vec<(Duration, Duration, String)>>>> = Arc::clone(&results);
+                pool.execute(move || {
+                    let (part, iter_time, total_time, result): (String, Duration, Duration, String) = run_multi_bench(input_file, &function, part, iterations);
+                    let mut tresults: std::sync::MutexGuard<'_, HashMap<String, Vec<(Duration, Duration, String)>>> = results.lock().unwrap();
+                    tresults.entry(part).and_modify(|x| x.push((iter_time, total_time, result.clone()))).or_insert(vec![(iter_time, total_time, result.clone())]);
+                });
+            }
         }
 
+        // wait for all threads to finish
         pool.join();
 
-        let mut results: Vec<String> = Arc::try_unwrap(results).expect("Lock still has multiple owners").into_inner().expect("Mutex cannot be locked");
-        results.sort();
-        for result in results {
+        let results: HashMap<String, Vec<(Duration, Duration, String)>> = Arc::try_unwrap(results).expect("Lock still has multiple owners").into_inner().expect("Mutex cannot be locked");
+        let mut printable_results: Vec<String> = Vec::new();
+
+        for (part, part_results) in results.iter() {
+            let mut iter_time_sum: Duration = Duration::new(0, 0);
+            let mut total_time_sum: Duration = Duration::new(0, 0);
+            let mut answer: String = "".to_string();
+
+            for (iter_time, total_time, result) in part_results {
+                iter_time_sum += *iter_time;
+                total_time_sum += *total_time;
+                answer = result.clone();
+            }
+
+            printable_results.push(format!("| {:^5} | {:>14.2?} | {:>10.2?} | {:<40} |", *part, iter_time_sum/part_results.len() as u32, total_time_sum, answer));
+        }
+
+        printable_results.sort();
+        for result in printable_results {
             println!("{}", result);
         }
 
@@ -149,5 +170,32 @@ fn run_bench(input_file_name: &str, function: &dyn Fn(String) -> String, functio
     } else {
         // did not read text file properly
         return format!("{} | Unable to read the file {}", function_name, input_file_name);
+    }
+}
+
+
+fn run_multi_bench(input_file_name: &str, function: &dyn Fn(String) -> String, function_name: &str, iterations: u32) -> (String, Duration, Duration, String) {
+    let mut times: Vec<Duration> = Vec::new();
+    let mut result: String = "".to_string();
+
+    if let Ok(contents) = fs::read_to_string(input_file_name) {
+        for _ in 0..iterations {
+            let now: Instant = Instant::now();
+            result = function(contents.clone());
+            times.push(now.elapsed())
+        }
+
+        // get the average
+        let mut mean_time: Duration = Duration::new(0, 0);
+        for time in times.clone() {
+            mean_time += time;
+        }
+        let total_time: Duration = mean_time;
+        mean_time /= times.len() as u32;
+
+        return (function_name.to_string(), mean_time, total_time, result);
+    } else {
+        // did not read text file properly
+        return (function_name.to_string(), Duration::new(0, 0), Duration::new(0, 0), format!("Unable to read the file {}", input_file_name));
     }
 }
