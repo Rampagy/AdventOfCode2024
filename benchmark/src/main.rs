@@ -17,7 +17,7 @@ const CENTISEC_ITERATIONS: u32 = 21; // ~1 second @ 5 centiseconds per iteration
 const DECISEC_ITERATIONS:  u32 = 6; // ~3 second @ 500 deciseconds per iteration
 const SEC_ITERATIONS:      u32 = 1; // minimum is at least 3 iterations
 
-const MULTI_THREADED_ITERATIONS: usize = 5;
+const MULTI_THREADED_ITERATIONS: usize = 4;
 
 
 #[allow(non_snake_case)]
@@ -81,8 +81,8 @@ fn main() {
 
     if arg_contains_multi || (!arg_contains_multi && !arg_contains_single) {
         println!("## Multi threaded results ({} threads)\n", num_cpus::get());
-        println!("| {:^5} | {:^14} | {:^10} | {:^40} |", "Part", "Iteration Time", "Total Time", "Answer");
-        println!("|-------|----------------|------------|------------------------------------------|");
+        println!("| {:^5} | {:^14} | {:^40} |", "Part", "Iteration Time", "Answer");
+        println!("|-------|----------------|------------------------------------------|");
 
         let now: Instant = Instant::now();
         let pool: ThreadPool = ThreadPool::new(num_cpus::get());
@@ -104,19 +104,18 @@ fn main() {
 
         let results: HashMap<String, Vec<(Duration, Duration, String)>> = Arc::try_unwrap(results).expect("Lock still has multiple owners").into_inner().expect("Mutex cannot be locked");
         let mut printable_results: Vec<String> = Vec::new();
+        let overall_total_time: Duration = now.elapsed();
 
         for (part, part_results) in results.iter() {
             let mut iter_time_sum: Duration = Duration::new(0, 0);
-            let mut total_time_sum: Duration = Duration::new(0, 0);
             let mut answer: String = "".to_string();
 
-            for (iter_time, total_time, result) in part_results {
+            for (iter_time, _total_time, result) in part_results {
                 iter_time_sum += *iter_time;
-                total_time_sum += *total_time;
                 answer = result.clone();
             }
 
-            printable_results.push(format!("| {:^5} | {:>14.2?} | {:>10.2?} | {:<40} |", *part, iter_time_sum/part_results.len() as u32, total_time_sum, answer));
+            printable_results.push(format!("| {:^5} | {:>14.2?} | {:<40} |", *part, iter_time_sum/part_results.len() as u32, answer));
         }
 
         printable_results.sort();
@@ -124,7 +123,7 @@ fn main() {
             println!("{}", result);
         }
 
-        println!("| Total |                | {:>10.2?} |                                          |", now.elapsed());
+        println!("| Total | {:>14.2?} |                                          |", overall_total_time);
     }
 
     if arg_contains_single == arg_contains_multi {
